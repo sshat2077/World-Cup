@@ -12,7 +12,8 @@
   :root{
     --bg:#0C0C10; --panel:#16161D; --panel2:#1d1d26; --line:#2A2A33;
     --ink:#F6F2E8; --soft:#D3CCBE; --faint:#8C8578;
-    --gold:#E3B53E; --gold-soft:#F4D784; --red:#E0726A; --green:#6FCF97; --blue:#4A86E8;
+    /* محايد: تِيل (وضوح/تفكير) — لا علاقة بأي هويّة أخرى */
+    --gold:#2FB8A6; --gold-soft:#6FD6C7; --red:#E0726A; --green:#6FCF97; --blue:#4A86E8;
     --sans:"IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
   }
   *{ margin:0; padding:0; box-sizing:border-box; }
@@ -88,7 +89,7 @@
   .pickbtn{ text-align:start; background:var(--panel2); border:1.5px solid var(--line); border-radius:14px;
     color:var(--ink); font-family:var(--sans); font-size:1.08rem; padding:14px 18px; cursor:pointer; transition:border-color .2s, background .2s; }
   .pickbtn:hover{ border-color:var(--gold); }
-  .pickbtn.sel{ border-color:var(--gold); background:rgba(227,181,62,.10); }
+  .pickbtn.sel{ border-color:var(--gold); background:rgba(47,184,166,.10); }
 
   .nav{ display:flex; gap:11px; margin-top:24px; }
   .btn{ font-family:var(--sans); font-weight:600; font-size:1.05rem; color:#1A1206; background:var(--gold);
@@ -102,7 +103,7 @@
   /* results */
   .res-rows{ margin-top:18px; display:flex; flex-direction:column; gap:11px; }
   .res-row{ background:var(--panel2); border:1px solid var(--line); border-radius:14px; padding:13px 16px; }
-  .res-row.win{ border-color:var(--gold); box-shadow:0 0 22px rgba(227,181,62,.28); }
+  .res-row.win{ border-color:var(--gold); box-shadow:0 0 22px rgba(47,184,166,.28); }
   .res-head{ display:flex; align-items:center; gap:10px; font-size:1.1rem; font-weight:600; }
   .res-head .sc{ margin-inline-start:auto; color:var(--gold); }
   .res-track{ height:10px; background:var(--bg); border:1px solid var(--line); border-radius:6px; overflow:hidden; margin-top:9px; }
@@ -112,7 +113,7 @@
   .vbig{ font-weight:600; font-size:clamp(1.4rem,4.4vw,2rem); color:var(--gold); }
   .badge{ display:inline-block; margin-top:10px; font-weight:600; border-radius:999px; padding:5px 16px; font-size:.95rem; }
   .badge.dec{ color:var(--green); background:rgba(111,207,151,.16); }
-  .badge.close{ color:var(--gold); background:rgba(227,181,62,.16); }
+  .badge.close{ color:var(--gold); background:rgba(47,184,166,.16); }
   .badge.sens{ color:var(--red); background:rgba(224,114,106,.16); }
   .note{ color:var(--soft); font-size:clamp(.95rem,2.6vw,1.08rem); line-height:1.75; margin-top:16px; }
   .note b{ color:var(--gold); }
