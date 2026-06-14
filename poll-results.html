@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{ --bg:#0C0C10; --panel:#16161D; --line:#2A2A33; --ink:#F6F2E8; --soft:#D3CCBE; --faint:#8C8578;
-    --gold:#E3B53E; --gold-soft:#F4D784;
+    --gold:#E3B53E; --gold-soft:#F4D784; --red:#E0726A;
     --sans:"IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif; }
   *{ margin:0; padding:0; box-sizing:border-box; }
   html,body{ height:100%; background:transparent; color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; }
@@ -28,6 +28,9 @@
   .row.lead .fill{ box-shadow:0 0 18px rgba(227,181,62,.55); }
   .val{ font-family:var(--sans); font-weight:600; color:var(--gold); font-size:clamp(1.05rem,2vw,1.5rem); text-align:center; }
   .empty{ flex:1; display:grid; place-items:center; color:var(--faint); text-align:center; font-size:1.1rem; line-height:1.8; }
+  .reset{ margin-inline-start:8px; font-family:var(--sans); font-size:.8rem; color:var(--faint);
+    background:transparent; border:1px solid var(--line); border-radius:999px; padding:3px 11px; cursor:pointer; }
+  .reset:hover{ color:var(--red); border-color:var(--red); }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -35,7 +38,7 @@
 </head>
 <body>
 <div class="board">
-  <div class="top"><span class="ttl">ماذا يتوقّع الفريق؟ 🏆</span><span class="live">● مباشر</span><span class="total" id="total"></span></div>
+  <div class="top"><span class="ttl">ماذا يتوقّع الفريق؟ 🏆</span><span class="live">● مباشر</span><span class="total" id="total"></span><button class="reset" id="reset" style="display:none">🗑 تصفير</button></div>
   <div id="bars" class="bars"></div>
 </div>
 <script>
@@ -50,6 +53,21 @@
   var bars = document.getElementById('bars'), totalEl = document.getElementById('total');
   if (!L.ready) { bars.innerHTML = '<div class="empty">بانتظار إعداد Firebase في <b>live-config.js</b></div>'; return; }
   bars.innerHTML = '<div class="empty">لا توقّعات بعد — افتحوا رابط التوقّع على جوّالكم وابدؤوا!</div>';
+
+  // Organizer-only reset (shown only when the board is opened with ?admin=1,
+  // which the deck does for its embedded copy; the public URL never shows it).
+  var admin = new URLSearchParams(location.search).get('admin') === '1';
+  var rb = document.getElementById('reset');
+  if (admin && rb) {
+    rb.style.display = '';
+    rb.addEventListener('click', function () {
+      if (!confirm('تصفير كل التوقّعات في هذه الغرفة؟ لا يمكن التراجع.')) return;
+      L.db.collection('rooms').doc(L.room).collection('votes').get().then(function (s) {
+        var batch = L.db.batch(); s.forEach(function (d) { batch.delete(d.ref); }); return batch.commit();
+      }).catch(function (e) { alert('تعذّر التصفير: ' + e.message); });
+    });
+  }
+
   L.db.collection('rooms').doc(L.room).collection('votes').onSnapshot(function (snap) {
     var tally = {}, total = 0; TEAMS.forEach(function (t) { tally[t.k] = 0; });
     snap.forEach(function (d) { var k = d.data().team; if (k in tally) { tally[k]++; total++; } });

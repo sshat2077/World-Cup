@@ -66,12 +66,42 @@
   var L = window.LIVE_INIT(); var app = document.getElementById('app');
   var votedKey = 'wc_voted_' + L.room;
 
+  // —— synthesized crowd cheer (no audio files); the tap is the user gesture. ——
+  function cheer() {
+    try {
+      var ac = window.__cheerAC || (window.__cheerAC = new (window.AudioContext || window.webkitAudioContext)());
+      if (ac.state === 'suspended' && ac.resume) ac.resume();
+      var t0 = ac.currentTime, dur = 1.1;
+      var buf = ac.createBuffer(1, Math.floor(ac.sampleRate * dur), ac.sampleRate);
+      var d = buf.getChannelData(0);
+      for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;       // white noise = crowd roar
+      var noise = ac.createBufferSource(); noise.buffer = buf;
+      var bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 950; bp.Q.value = 0.6;
+      var g = ac.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.55, t0 + 0.28);                   // swell up
+      g.gain.exponentialRampToValueAtTime(0.0008, t0 + dur);                  // fade out
+      noise.connect(bp); bp.connect(g); g.connect(ac.destination);
+      noise.start(t0); noise.stop(t0 + dur);
+      [880, 1245].forEach(function (f, k) {                                   // a couple of rising cheers on top
+        var o = ac.createOscillator(), og = ac.createGain(), s = t0 + 0.12 + k * 0.07;
+        o.type = 'sine'; o.frequency.setValueAtTime(f, s);
+        o.frequency.exponentialRampToValueAtTime(f * 1.5, s + 0.4);
+        og.gain.setValueAtTime(0.0001, s);
+        og.gain.exponentialRampToValueAtTime(0.12, s + 0.1);
+        og.gain.exponentialRampToValueAtTime(0.0006, s + 0.6);
+        o.connect(og); og.connect(ac.destination); o.start(s); o.stop(s + 0.65);
+      });
+    } catch (e) {}
+  }
+
   if (!L.ready) {
     app.innerHTML = '<div class="warn">لم يُضبط الإعداد بعد. على المنظِّم تعبئة <b>live-config.js</b> بمفاتيح Firebase ونشر الصفحة.</div>';
     return;
   }
 
   function vote(k) {
+    cheer();
     L.db.collection('rooms').doc(L.room).collection('votes')
       .add({ team: k, ts: firebase.firestore.FieldValue.serverTimestamp() })
       .then(function () { try { localStorage.setItem(votedKey, k); } catch (e) {} showResults(k); })
