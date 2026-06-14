@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>بوصلة القرار — قرارٌ مبنيّ على منهج</title>
+<meta name="description" content="أداة قرار متعدّدة المعايير: ضع خياراتك واعتباراتك وحدسك، فتصل إلى الخيار الأكثر اتّساقًا — بمنهج علميّ شفّاف.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0C0C10; --panel:#16161D; --panel2:#1d1d26; --line:#2A2A33;
+    --ink:#F6F2E8; --soft:#D3CCBE; --faint:#8C8578;
+    --gold:#E3B53E; --gold-soft:#F4D784; --red:#E0726A; --green:#6FCF97; --blue:#4A86E8;
+    --sans:"IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ min-height:100%; background:radial-gradient(1000px 560px at 50% -10%,#15151d,var(--bg) 60%);
+    color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:660px; margin:0 auto; padding:20px 16px 56px; }
+  .top{ display:flex; align-items:center; gap:12px; }
+  .brand{ display:flex; align-items:center; gap:10px; font-weight:600; font-size:1.15rem; }
+  .brand .logo{ font-size:1.6rem; }
+  .top .spacer{ margin-inline-start:auto; }
+  .ghostbtn{ font-family:var(--sans); font-size:.85rem; color:var(--soft); background:transparent;
+    border:1px solid var(--line); border-radius:999px; padding:6px 13px; cursor:pointer; }
+  .ghostbtn:hover{ border-color:var(--gold); color:var(--gold); }
+
+  /* clarity gauge / progress */
+  .gauge{ margin-top:14px; }
+  .gauge-bar{ height:8px; background:var(--panel); border:1px solid var(--line); border-radius:999px; overflow:hidden; }
+  .gauge-fill{ height:100%; width:0; background:linear-gradient(90deg,var(--gold),var(--gold-soft));
+    border-radius:999px; transition:width .5s cubic-bezier(.2,.8,.2,1); }
+  .gauge-lbl{ display:flex; justify-content:space-between; font-size:.78rem; color:var(--faint); margin-top:6px; }
+
+  .card{ background:var(--panel); border:1px solid var(--line); border-radius:22px;
+    padding:clamp(20px,5vw,32px); margin-top:18px; box-shadow:0 18px 50px rgba(0,0,0,.4);
+    animation:rise .35s ease both; }
+  @keyframes rise{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:none;} }
+  .step-tag{ color:var(--gold); font-weight:600; font-size:.85rem; letter-spacing:.02em; }
+  h1.q{ font-weight:600; font-size:clamp(1.4rem,4.6vw,2rem); line-height:1.35; margin-top:8px; }
+  .hint{ color:var(--soft); font-size:clamp(.95rem,2.6vw,1.08rem); line-height:1.7; margin-top:10px; }
+
+  input[type=text]{ width:100%; background:var(--panel2); border:1.5px solid var(--line); border-radius:14px;
+    color:var(--ink); font-family:var(--sans); font-size:1.05rem; padding:13px 16px; margin-top:16px; }
+  input[type=text]:focus{ outline:none; border-color:var(--gold); }
+  select{ width:100%; background:var(--panel2); border:1.5px solid var(--line); border-radius:14px; color:var(--ink);
+    font-family:var(--sans); font-size:1rem; padding:12px 14px; margin-top:12px; }
+
+  .chips{ display:flex; flex-wrap:wrap; gap:9px; margin-top:14px; }
+  .chip{ display:inline-flex; align-items:center; gap:8px; background:var(--panel2); border:1.5px solid var(--line);
+    border-radius:999px; padding:8px 14px; font-size:1rem; }
+  .chip .x{ cursor:pointer; color:var(--faint); font-weight:700; }
+  .chip .x:hover{ color:var(--red); }
+  .chip .bc{ font-size:.72rem; color:var(--faint); cursor:pointer; border:1px solid var(--line); border-radius:6px; padding:1px 6px; }
+  .chip .bc.cost{ color:var(--red); } .chip .bc.benefit{ color:var(--green); }
+  .chip .ess{ font-size:.72rem; cursor:pointer; opacity:.5; }
+  .chip .ess.on{ opacity:1; }
+  .suggest{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .sg{ font-size:.9rem; color:var(--soft); background:transparent; border:1px dashed var(--line);
+    border-radius:999px; padding:6px 12px; cursor:pointer; }
+  .sg:hover{ border-color:var(--gold); color:var(--gold); }
+
+  .rowin{ display:flex; gap:9px; margin-top:14px; }
+  .rowin input{ margin-top:0; }
+  .addbtn{ flex:none; background:var(--gold); color:#1A1206; border:none; border-radius:14px; font-weight:600;
+    font-family:var(--sans); font-size:1rem; padding:0 18px; cursor:pointer; }
+
+  /* sliders */
+  .slab{ margin-top:18px; }
+  .slab .lab{ display:flex; justify-content:space-between; align-items:baseline; font-size:1rem; color:var(--soft); }
+  .slab .lab b{ color:var(--gold); font-family:var(--sans); }
+  input[type=range]{ width:100%; accent-color:var(--gold); height:28px; cursor:ew-resize; margin-top:4px; }
+  .wbars{ margin-top:16px; display:flex; flex-direction:column; gap:7px; }
+  .wbar{ display:grid; grid-template-columns:9em 1fr 3em; align-items:center; gap:10px; font-size:.92rem; color:var(--soft); }
+  .wtrack{ height:10px; background:var(--panel2); border:1px solid var(--line); border-radius:6px; overflow:hidden; }
+  .wfill{ height:100%; width:0; background:linear-gradient(90deg,var(--gold),var(--gold-soft)); border-radius:6px; transition:width .4s; }
+  .wval{ color:var(--gold); font-weight:600; text-align:center; }
+
+  .opt-rows{ margin-top:10px; }
+  .opt-row{ margin-top:14px; }
+  .opt-row .nm{ display:flex; justify-content:space-between; align-items:center; font-size:1rem; }
+  .opt-row .val{ color:var(--gold); font-weight:600; }
+  .dunno{ font-size:.82rem; color:var(--faint); display:inline-flex; align-items:center; gap:5px; cursor:pointer; }
+
+  .pick{ display:flex; flex-direction:column; gap:10px; margin-top:16px; }
+  .pickbtn{ text-align:start; background:var(--panel2); border:1.5px solid var(--line); border-radius:14px;
+    color:var(--ink); font-family:var(--sans); font-size:1.08rem; padding:14px 18px; cursor:pointer; transition:border-color .2s, background .2s; }
+  .pickbtn:hover{ border-color:var(--gold); }
+  .pickbtn.sel{ border-color:var(--gold); background:rgba(227,181,62,.10); }
+
+  .nav{ display:flex; gap:11px; margin-top:24px; }
+  .btn{ font-family:var(--sans); font-weight:600; font-size:1.05rem; color:#1A1206; background:var(--gold);
+    border:none; border-radius:14px; padding:13px 26px; cursor:pointer; transition:filter .2s, transform .08s; }
+  .btn:hover{ filter:brightness(1.07); } .btn:active{ transform:translateY(1px); }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .btn.back{ background:transparent; color:var(--soft); border:1.5px solid var(--line); }
+  .btn.wide{ width:100%; }
+  .nav .spacer{ margin-inline-start:auto; }
+
+  /* results */
+  .res-rows{ margin-top:18px; display:flex; flex-direction:column; gap:11px; }
+  .res-row{ background:var(--panel2); border:1px solid var(--line); border-radius:14px; padding:13px 16px; }
+  .res-row.win{ border-color:var(--gold); box-shadow:0 0 22px rgba(227,181,62,.28); }
+  .res-head{ display:flex; align-items:center; gap:10px; font-size:1.1rem; font-weight:600; }
+  .res-head .sc{ margin-inline-start:auto; color:var(--gold); }
+  .res-track{ height:10px; background:var(--bg); border:1px solid var(--line); border-radius:6px; overflow:hidden; margin-top:9px; }
+  .res-fill{ height:100%; width:0; background:linear-gradient(90deg,var(--gold),var(--gold-soft)); border-radius:6px; transition:width .9s cubic-bezier(.2,.8,.2,1); }
+  .flag{ color:var(--red); font-size:.85rem; margin-top:7px; }
+  .verdict{ text-align:center; margin-top:20px; }
+  .vbig{ font-weight:600; font-size:clamp(1.4rem,4.4vw,2rem); color:var(--gold); }
+  .badge{ display:inline-block; margin-top:10px; font-weight:600; border-radius:999px; padding:5px 16px; font-size:.95rem; }
+  .badge.dec{ color:var(--green); background:rgba(111,207,151,.16); }
+  .badge.close{ color:var(--gold); background:rgba(227,181,62,.16); }
+  .badge.sens{ color:var(--red); background:rgba(224,114,106,.16); }
+  .note{ color:var(--soft); font-size:clamp(.95rem,2.6vw,1.08rem); line-height:1.75; margin-top:16px; }
+  .note b{ color:var(--gold); }
+  .gut-line{ background:var(--panel2); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-top:16px; font-size:1.02rem; }
+
+  /* method / study overlay */
+  .overlay{ position:fixed; inset:0; background:rgba(6,6,9,.72); display:none; align-items:center; justify-content:center;
+    padding:20px; z-index:30; }
+  .overlay.show{ display:flex; }
+  .sheet{ background:var(--panel); border:1px solid var(--line); border-radius:20px; max-width:620px; width:100%;
+    max-height:86vh; overflow:auto; padding:clamp(20px,5vw,30px); }
+  .sheet h2{ font-size:1.4rem; font-weight:600; }
+  .sheet h3{ font-size:1.08rem; font-weight:600; color:var(--gold); margin-top:18px; }
+  .sheet p{ color:var(--soft); line-height:1.8; margin-top:7px; }
+  .sheet a{ color:var(--gold); }
+  .sheet .close{ float:inline-end; cursor:pointer; color:var(--faint); font-size:1.4rem; }
+  .ref{ font-size:.9rem; }
+
+  .toast{ position:fixed; inset-block-end:24px; inset-inline:0; margin-inline:auto; width:max-content;
+    background:var(--gold); color:#1A1206; font-weight:600; padding:10px 20px; border-radius:999px;
+    opacity:0; transform:translateY(10px); transition:opacity .25s, transform .25s; pointer-events:none; z-index:40; }
+  .toast.show{ opacity:1; transform:none; }
+  datalist{ color:#000; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><span class="logo">🧭</span> بوصلة القرار</div>
+    <span class="spacer"></span>
+    <button class="ghostbtn" id="method">ⓘ المنهج العلمي</button>
+    <button class="ghostbtn" id="restart">↺ ابدأ من جديد</button>
+  </div>
+  <div class="gauge">
+    <div class="gauge-bar"><div class="gauge-fill" id="gfill"></div></div>
+    <div class="gauge-lbl"><span>وضوح القرار</span><span id="glbl">0%</span></div>
+  </div>
+  <main id="app"></main>
+</div>
+
+<div class="overlay" id="methodOverlay">
+  <div class="sheet">
+    <span class="close" id="methodClose">✕</span>
+    <h2>المنهج العلمي 🧪</h2>
+    <p>هذه الأداة لا «تقرّر بدلًا منك»؛ بل تُنظّم أحكامك بطريقةٍ شفّافة مأخوذة من <b>علم القرار متعدّد المعايير (MCDA / MAVT)</b>، وتكشف الخيار الأكثر اتّساقًا مع اعتباراتك — وتصارحك حين يكون القرار متقاربًا أو حسّاسًا.</p>
+    <h3>١) نموذج القيمة الجمعيّ (MAVT / مجموع موزون مُطبَّع)</h3>
+    <p>الأساس البديهيّ من نظرية المنفعة. اخترناه لأنه <b>شفّاف وقابل للشرح</b>، وفي دراسات المقارنة <b>لم يُنتج «انعكاس رتبة»</b> بخلاف AHP وTOPSIS.
+      <span class="ref"><a href="https://reference-global.com/2/v2/download/article/10.2478/rtuect-2020-0028.pdf" target="_blank" rel="noopener">مقارنة المناهج</a> · <a href="http://www.scielo.br/j/pope/a/BPwgsywPZqgctBDcfPXxczg/?lang=en" target="_blank" rel="noopener">مراجعة انعكاس الرتبة</a></span></p>
+    <h3>٢) ترجيح «التأرجح» (Swing weighting)</h3>
+    <p>التقييم المباشر للأهمية خطأٌ معروف لأنه يتجاهل <b>مدى</b> الفرق بين الخيارات. لذا نسأل: «لو نقلنا المعيار من <b>أسوأ خيارٍ إلى أفضله</b>، كم يهمّك؟».
+      <span class="ref"><a href="https://analysisfunction.civilservice.gov.uk/policy-store/an-introductory-guide-to-mcda/" target="_blank" rel="noopener">دليل MCDA الحكومي</a> · <a href="https://www.mdpi.com/2076-3417/11/21/10397" target="_blank" rel="noopener">مراجعة طرق الترجيح</a></span></p>
+    <h3>٣) التطبيع وحارسٌ غير تعويضيّ</h3>
+    <p>نُطبّع كل معيار إلى مقياسٍ موحّد [0–1] بأفضل/أسوأ خيار. والمعايير «الأساسية» تعمل كحارس: أي خيارٍ يسقط تحت حدّها يُعلَّم «كاسر صفقة» بدل أن يُخفيه التعويض.
+      <span class="ref"><a href="https://www.mdpi.com/1099-4300/28/1/114" target="_blank" rel="noopener">التطبيع والاستقرار</a></span></p>
+    <h3>٤) تحليل الحساسية (جوهر التواضع)</h3>
+    <p>مخرجات المنهج حسّاسة للأوزان، فنُجري <b>محاكاة</b> نُغيّر فيها الأوزان عشوائيًّا مئات المرّات لنقيس <b>متانة</b> الفائز، ونُحدّد <b>المعيار الأكثر حسماً</b>. فإن تذبذب الفائز → «قرار غير حاسم».
+      <span class="ref"><a href="https://en.wikipedia.org/wiki/Applications_of_sensitivity_analysis_to_multi-criteria_decision_making" target="_blank" rel="noopener">الحساسية في MCDA</a> · <a href="https://www.sciencedirect.com/science/article/pii/S0957417425020792" target="_blank" rel="noopener">فواصل استقرار الوزن</a></span></p>
+    <p style="margin-top:18px; color:var(--faint)">باختصار: <b>MAVT + ترجيح تأرجحيّ + حارس + تحليل حساسية</b> — منهجٌ مفحوصٌ علميًّا، يخدم الشفافية لا اليقين الزائف.</p>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  // —— templates: suggested options + criteria per common decision ——
+  var TEMPLATES = {
+    'وظيفة / عرض عمل': { options:['عرض A','عرض B'], criteria:['الراتب','فرص النموّ','التوازن بين العمل والحياة','الموقع','ثقافة الشركة'] },
+    'شراء سيارة': { options:['سيارة A','سيارة B'], criteria:['السعر','الاعتمادية','استهلاك الوقود','الأمان','الراحة'] },
+    'سكن: إيجار أم شراء': { options:['الإيجار','الشراء'], criteria:['التكلفة الشهرية','الموقع','المساحة','المرونة','قيمة الاستثمار'] },
+    'اختيار مورّد': { options:['مورّد A','مورّد B'], criteria:['السعر','الجودة','الموثوقية','الدعم','سرعة التسليم'] },
+    'قرار استثمار': { options:['الخيار A','الخيار B'], criteria:['العائد المتوقّع','المخاطرة','السيولة','الأفق الزمني','وضوح الفهم'] }
+  };
+  var COST = ['السعر','التكلفة','التكلفة الشهرية','المخاطرة','استهلاك الوقود','الأفق الزمني'];
+  var ALL_CRIT = []; Object.keys(TEMPLATES).forEach(function (k) { TEMPLATES[k].criteria.forEach(function (c) { if (ALL_CRIT.indexOf(c) < 0) ALL_CRIT.push(c); }); });
+
+  var app = document.getElementById('app');
+  var toast = document.getElementById('toast');
+  var gfill = document.getElementById('gfill'), glbl = document.getElementById('glbl');
+  var uid = 1; function id() { return 'x' + (uid++); }
+  var state, step, si;
+
+  function fresh() {
+    return { decision:'', options:[], criteria:[], scores:{}, gut:null, confidence:60 };
+  }
+  function save() { try { localStorage.setItem('decision_state', JSON.stringify({ state: state, step: step })); } catch (e) {} }
+  function load() {
+    try { var s = JSON.parse(localStorage.getItem('decision_state') || 'null'); if (s && s.state) return s; } catch (e) {}
+    return null;
+  }
+  function showToast(m) { toast.textContent = m; toast.classList.add('show'); setTimeout(function () { toast.classList.remove('show'); }, 1700); }
+
+  function isCost(name) { for (var i = 0; i < COST.length; i++) if (name.indexOf(COST[i]) >= 0) return true; return false; }
+
+  // —— progress / clarity gauge ——
+  function setGauge(pct, label) {
+    gfill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+    glbl.textContent = (label || Math.round(pct) + '%');
+  }
+  function progressForStep() {
+    switch (step) {
+      case 0: return 0; case 1: return 8; case 2: return 20; case 3: return 35; case 4: return 50;
+      case 5: return 50 + (si / Math.max(1, state.criteria.length)) * 30;
+      case 6: return 84; case 7: return 92; case 8: return 100; default: return 0;
+    }
+  }
+
+  // —— the journey ——
+  function go(s) { step = s; if (s === 5) si = 0; render(); }
+  function render() {
+    if (step !== 8) setGauge(progressForStep());
+    save();
+    if (step === 0) return intro();
+    if (step === 1) return sDecision();
+    if (step === 2) return sOptions();
+    if (step === 3) return sCriteria();
+    if (step === 4) return sWeights();
+    if (step === 5) return sScoring();
+    if (step === 6) return sGut();
+    if (step === 7) return sConfidence();
+    if (step === 8) return sResults();
+  }
+
+  function navHTML(opts) {
+    opts = opts || {};
+    var back = opts.back === false ? '' : '<button class="btn back" data-back>رجوع</button>';
+    var next = '<button class="btn" data-next' + (opts.disabled ? ' disabled' : '') + '>' + (opts.nextLabel || 'التالي ←') + '</button>';
+    return '<div class="nav">' + back + '<span class="spacer"></span>' + next + '</div>';
+  }
+  function bindNav(onNext) {
+    var b = app.querySelector('[data-back]'), n = app.querySelector('[data-next]');
+    if (b) b.addEventListener('click', function () { go(Math.max(0, step - 1)); });
+    if (n) n.addEventListener('click', onNext);
+  }
+
+  function intro() {
+    app.innerHTML =
+      '<div class="card">' +
+      '<div class="step-tag">هديّة اللقاء</div>' +
+      '<h1 class="q">كل قرارٍ محيّر… يصير أوضح في ٤ دقائق.</h1>' +
+      '<p class="hint">ضع خياراتك، وما يهمّك، وحدسك — فتصل إلى <b style="color:var(--gold)">الخيار الأكثر اتّساقًا</b> مع اعتباراتك، بمنهجٍ علميٍّ شفّاف يصارحك حين يكون القرار متقاربًا.</p>' +
+      '<div class="nav"><span class="spacer"></span><button class="btn" data-next>ابدأ قراري ▶</button></div>' +
+      '</div>';
+    app.querySelector('[data-next]').addEventListener('click', function () { go(1); });
+  }
+
+  function sDecision() {
+    var opts = Object.keys(TEMPLATES).map(function (k) { return '<option value="' + k + '">' + k + '</option>'; }).join('');
+    app.innerHTML =
+      '<div class="card">' +
+      '<div class="step-tag">الخطوة ١ · القرار</div>' +
+      '<h1 class="q">ما القرار الذي تريد حسمه؟</h1>' +
+      '<input type="text" id="dec" placeholder="مثال: أيّ عرض عمل أقبل؟" value="' + esc(state.decision) + '">' +
+      '<p class="hint">اكتب قرارك، أو اختر قالبًا جاهزًا يملأ لك خياراتٍ ومعايير مقترحة:</p>' +
+      '<select id="tpl"><option value="">— اختر قالبًا (اختياري) —</option>' + opts + '</select>' +
+      navHTML({ back: false, disabled: !state.decision }) +
+      '</div>';
+    var dec = app.querySelector('#dec'), tpl = app.querySelector('#tpl'), next = app.querySelector('[data-next]');
+    dec.addEventListener('input', function () { state.decision = dec.value.trim(); next.disabled = !state.decision; save(); });
+    tpl.addEventListener('change', function () {
+      var t = TEMPLATES[tpl.value]; if (!t) return;
+      if (!state.decision) { state.decision = tpl.value; dec.value = tpl.value; next.disabled = false; }
+      state.options = t.options.map(function (n) { return { id: id(), name: n }; });
+      state.criteria = t.criteria.map(function (n) { return { id: id(), name: n, benefit: !isCost(n), essential: false }; });
+      save(); showToast('بداية ذكية ✨ عبّأنا خيارات ومعايير مقترحة');
+    });
+    bindNav(function () { state.decision = dec.value.trim(); if (state.decision) go(2); });
+  }
+
+  function chipList(items, kind) {
+    return '<div class="chips">' + items.map(function (it) {
+      var extra = '';
+      if (kind === 'criteria') {
+        extra = '<span class="bc ' + (it.benefit ? 'benefit' : 'cost') + '" data-bc="' + it.id + '">' + (it.benefit ? 'أكثر أفضل' : 'أقل أفضل') + '</span>' +
+                '<span class="ess ' + (it.essential ? 'on' : '') + '" data-ess="' + it.id + '" title="اجعله شرطًا أساسيًّا">⭐</span>';
+      }
+      return '<span class="chip">' + esc(it.name) + extra + '<span class="x" data-del="' + it.id + '">✕</span></span>';
+    }).join('') + '</div>';
+  }
+
+  function sOptions() {
+    app.innerHTML =
+      '<div class="card">' +
+      '<div class="step-tag">الخطوة ٢ · الخيارات</div>' +
+      '<h1 class="q">ما البدائل المطروحة؟</h1>' +
+      '<p class="hint">أضِف بين خيارين وخمسة. اكتب واضغط Enter أو «أضِف».</p>' +
+      '<div class="rowin"><input type="text" id="oin" list="osug" placeholder="اسم الخيار…"><button class="addbtn" id="oadd">أضِف</button></div>' +
+      '<datalist id="osug"></datalist>' +
+      chipList(state.options, 'options') +
+      navHTML({ disabled: state.options.length < 2 }) +
+      '</div>';
+    var oin = app.querySelector('#oin');
+    function add() { var v = oin.value.trim(); if (!v || state.options.length >= 5) { if (state.options.length >= 5) showToast('بحدّ أقصى ٥ خيارات'); return; } state.options.push({ id: id(), name: v }); oin.value = ''; save(); sOptions(); oin.focus(); }
+    app.querySelector('#oadd').addEventListener('click', add);
+    oin.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); add(); } });
+    app.querySelectorAll('[data-del]').forEach(function (x) { x.addEventListener('click', function () { state.options = state.options.filter(function (o) { return o.id !== x.getAttribute('data-del'); }); save(); sOptions(); }); });
+    bindNav(function () { if (state.options.length >= 2) go(3); });
+  }
+
+  function sCriteria() {
+    var sugg = ALL_CRIT.filter(function (c) { return !state.criteria.some(function (x) { return x.name === c; }); });
+    app.innerHTML =
+      '<div class="card">' +
+      '<div class="step-tag">الخطوة ٣ · ما يهمّك</div>' +
+      '<h1 class="q">ما الاعتبارات التي تحكم قرارك؟</h1>' +
+      '<p class="hint">الأفضل ٣–٥ اعتبارات. اضبط لكلٍّ «أكثر أفضل / أقل أفضل»، و⭐ لجعله شرطًا أساسيًّا (كاسر صفقة).</p>' +
+      '<div class="rowin"><input type="text" id="cin" placeholder="اعتبار جديد…"><button class="addbtn" id="cadd">أضِف</button></div>' +
+      (sugg.length ? '<div class="suggest">' + sugg.map(function (c) { return '<button class="sg" data-sg="' + esc(c) + '">+ ' + esc(c) + '</button>'; }).join('') + '</div>' : '') +
+      chipList(state.criteria, 'criteria') +
+      navHTML({ disabled: state.criteria.length < 2 }) +
+      '</div>';
+    var cin = app.querySelector('#cin');
+    function add(name) { var v = (name || cin.value).trim(); if (!v || state.criteria.length >= 7) { if (state.criteria.length >= 7) showToast('بحدّ أقصى ٧ معايير'); return; } if (state.criteria.some(function (x) { return x.name === v; })) return; state.criteria.push({ id: id(), name: v, benefit: !isCost(v), essential: false }); cin.value = ''; save(); sCriteria(); }
+    app.querySelector('#cadd').addEventListener('click', function () { add(); });
+    cin.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); add(); } });
+    app.querySelectorAll('[data-sg]').forEach(function (b) { b.addEventListener('click', function () { add(b.getAttribute('data-sg')); }); });
+    app.querySelectorAll('[data-del]').forEach(function (x) { x.addEventListener('click', function () { state.criteria = state.criteria.filter(function (c) { return c.id !== x.getAttribute('data-del'); }); save(); sCriteria(); }); });
+    app.querySelectorAll('[data-bc]').forEach(function (b) { b.addEventListener('click', function () { var c = find(state.criteria, b.getAttribute('data-bc')); c.benefit = !c.benefit; save(); sCriteria(); }); });
+    app.querySelectorAll('[data-ess]').forEach(function (b) { b.addEventListener('click', function () { var c = find(state.criteria, b.getAttribute('data-ess')); c.essential = !c.essential; save(); sCriteria(); }); });
+    bindNav(function () { if (state.criteria.length >= 2) go(4); });
+  }
+
+  function sWeights() {
+    state.criteria.forEach(function (c) { if (c.weight == null) c.weight = 50; });
+    app.innerHTML =
+      '<div class="card">' +
+      '<div class="step-tag">الخطوة ٤ · الأهمية</div>' +
+      '<h1 class="q">كم يهمّك كل اعتبار؟</h1>' +
+      '<p class="hint">فكّر هكذا: «لو نقلنا هذا المعيار من <b>أسوأ خيارٍ إلى أفضله</b> — كم يهمّني ذلك؟» (هذا الترجيح العلميّ الصحيح).</p>' +
+      state.criteria.map(function (c) {
+        return '<div class="slab"><div class="lab"><span>' + esc(c.name) + '</span><b data-wl="' + c.id + '">' + c.weight + '</b></div>' +
+          '<input type="range" min="0" max="100" value="' + c.weight + '" data-w="' + c.id + '"></div>';
+      }).join('') +
+      '<div class="wbars" id="wbars"></div>' +
+      navHTML({}) +
+      '</div>';
+    function paintWeights() {
+      var sum = 0; state.criteria.forEach(function (c) { sum += c.weight; });
+      var wb = app.querySelector('#wbars');
+      wb.innerHTML = state.criteria.slice().sort(function (a, b) { return b.weight - a.weight; }).map(function (c) {
+        var pct = sum > 0 ? (c.weight / sum * 100) : (100 / state.criteria.length);
+        return '<div class="wbar"><span>' + esc(c.name) + '</span><div class="wtrack"><div class="wfill" style="width:' + pct.toFixed(0) + '%"></div></div><span class="wval">' + pct.toFixed(0) + '%</span></div>';
+      }).join('');
+    }
+    app.querySelectorAll('[data-w]').forEach(function (r) {
+      r.addEventListener('input', function () {
+        var c = find(state.criteria, r.getAttribute('data-w')); c.weight = +r.value;
+        app.querySelector('[data-wl="' + c.id + '"]').textContent = r.value; paintWeights(); save();
+      });
+    });
+    paintWeights();
+    bindNav(function () { go(5); });
+  }
+
+  function sScoring() {
+    var c = state.criteria[si];
+    var dir = c.benefit ? 'كلّما زاد كان أفضل' : 'كلّما قلّ كان أفضل';
+    app.innerHTML =
+      '<div class="card">' +
+      '<div class="step-tag">الخطوة ٥ · التقييم — معيار ' + (si + 1) + ' / ' + state.criteria.length + '</div>' +
+      '<h1 class="q">قيّم الخيارات في: <span style="color:var(--gold)">' + esc(c.name) + '</span></h1>' +
+      '<p class="hint">' + dir + '. حرّك المؤشّر (٠–١٠٠)، أو اختر «لا أعرف» فيُحسب محايدًا.</p>' +
+      '<div class="opt-rows">' + state.options.map(function (o) {
+        var sc = (state.scores[o.id] && state.scores[o.id][c.id]);
+        var unknown = sc == null && state.scores[o.id] && (c.id in state.scores[o.id]);
+        var val = sc == null ? 50 : sc;
+        return '<div class="opt-row" data-opt="' + o.id + '">' +
+          '<div class="nm"><span>' + esc(o.name) + '</span><span class="val" data-sv>' + (unknown ? '—' : val) + '</span></div>' +
+          '<input type="range" min="0" max="100" value="' + val + '" data-score' + (unknown ? ' disabled' : '') + '>' +
+          '<label class="dunno"><input type="checkbox" data-dunno' + (unknown ? ' checked' : '') + '> لا أعرف</label>' +
+          '</div>';
+      }).join('') + '</div>' +
+      navHTML({ nextLabel: si < state.criteria.length - 1 ? 'المعيار التالي ←' : 'تابع ←' }) +
+      '</div>';
+    app.querySelectorAll('.opt-row').forEach(function (row) {
+      var oid = row.getAttribute('data-opt');
+      if (!state.scores[oid]) state.scores[oid] = {};
+      var rng = row.querySelector('[data-score]'), sv = row.querySelector('[data-sv]'), du = row.querySelector('[data-dunno]');
+      function commit() {
+        if (du.checked) { state.scores[oid][c.id] = null; rng.disabled = true; sv.textContent = '—'; }
+        else { state.scores[oid][c.id] = +rng.value; rng.disabled = false; sv.textContent = rng.value; }
+        save();
+      }
+      rng.addEventListener('input', function () { sv.textContent = rng.value; state.scores[oid][c.id] = +rng.value; save(); });
+      du.addEventListener('change', commit);
+      if (!(c.id in state.scores[oid])) state.scores[oid][c.id] = +rng.value;  // default capture
+    });
+    var b = app.querySelector('[data-back]'), n = app.querySelector('[data-next]');
+    b.addEventListener('click', function () { if (si > 0) { si--; render(); } else go(4); });
+    n.addEventListener('click', function () { if (si < state.criteria.length - 1) { si++; render(); } else go(6); });
+  }
+
+  function sGut() {
+    app.innerHTML =
+      '<div class="card">' +
+      '<div class="step-tag">الخطوة ٦ · الحدس</div>' +
+      '<h1 class="q">قبل الحساب: أيّ القرارات تميل إليه؟</h1>' +
+      '<p class="hint">اختيارك يبقى بينك وبين الأداة — سنقارنه بنتيجة المنهج بعد قليل.</p>' +
+      '<div class="pick">' + state.options.map(function (o) {
+        return '<button class="pickbtn' + (state.gut === o.id ? ' sel' : '') + '" data-g="' + o.id + '">' + esc(o.name) + '</button>';
+      }).join('') + '</div>' +
+      navHTML({ disabled: !state.gut }) +
+      '</div>';
+    app.querySelectorAll('[data-g]').forEach(function (b) { b.addEventListener('click', function () { state.gut = b.getAttribute('data-g'); save(); sGut(); }); });
+    bindNav(function () { if (state.gut) go(7); });
+  }
+
+  function sConfidence() {
+    app.innerHTML =
+      '<div class="card">' +
+      '<div class="step-tag">الخطوة ٧ · الثقة</div>' +
+      '<h1 class="q">كم تثق ببياناتك وتقييمك؟</h1>' +
+      '<p class="hint">يساعدنا هذا في صياغة رسالة التواضع المناسبة لنتيجتك.</p>' +
+      '<div class="slab"><div class="lab"><span>منخفضة</span><b id="cl">' + state.confidence + '%</b></div>' +
+      '<input type="range" min="0" max="100" value="' + state.confidence + '" id="cf"></div>' +
+      navHTML({ nextLabel: 'اكشف النتيجة 🎯' }) +
+      '</div>';
+    var cf = app.querySelector('#cf');
+    cf.addEventListener('input', function () { state.confidence = +cf.value; app.querySelector('#cl').textContent = cf.value + '%'; save(); });
+    bindNav(function () { go(8); });
+  }
+
+  // —— the algorithm (MAVT + swing weights + normalization + sensitivity) ——
+  function normalize() {
+    var v = {};
+    state.criteria.forEach(function (c) {
+      v[c.id] = {};
+      var xs = state.options.map(function (o) { var s = state.scores[o.id] && state.scores[o.id][c.id]; return (s == null ? 50 : s); });
+      var min = Math.min.apply(null, xs), max = Math.max.apply(null, xs);
+      state.options.forEach(function (o, i) {
+        var x = xs[i], val;
+        if (max === min) val = 0.5; else if (c.benefit) val = (x - min) / (max - min); else val = (max - x) / (max - min);
+        v[c.id][o.id] = val;
+      });
+    });
+    return v;
+  }
+  function normWeights(w) { var s = 0; state.criteria.forEach(function (c) { s += (c.weight || 0); });
+    var out = {}; state.criteria.forEach(function (c) { out[c.id] = s > 0 ? (c.weight || 0) / s : 1 / state.criteria.length; }); return out; }
+  function values(v, w) { var r = {}; state.options.forEach(function (o) { var s = 0; state.criteria.forEach(function (c) { s += w[c.id] * v[c.id][o.id]; }); r[o.id] = s; }); return r; }
+  function ranked(val) { return state.options.slice().sort(function (a, b) { return val[b.id] - val[a.id]; }); }
+
+  function compute() {
+    var v = normalize(), w = normWeights(), val = values(v, w), rk = ranked(val);
+    var winner = rk[0], margin = rk.length > 1 ? (val[rk[0].id] - val[rk[1].id]) : 1;
+    // robustness via Monte-Carlo weight perturbation
+    var N = 500, stay = 0;
+    for (var k = 0; k < N; k++) {
+      var sum = 0, raw = {};
+      state.criteria.forEach(function (c) { var f = 0.8 + Math.random() * 0.4; raw[c.id] = (c.weight || 0) * f; sum += raw[c.id]; });
+      var w2 = {}; state.criteria.forEach(function (c) { w2[c.id] = sum > 0 ? raw[c.id] / sum : 1 / state.criteria.length; });
+      if (ranked(values(v, w2))[0].id === winner.id) stay++;
+    }
+    var robustness = Math.round(stay / N * 100);
+    // most critical criterion: zero each weight, see which flips with least disruption (highest weight that flips)
+    var flips = [];
+    state.criteria.forEach(function (c) {
+      var sum = 0, raw = {}; state.criteria.forEach(function (x) { raw[x.id] = (x.id === c.id ? 0 : (x.weight || 0)); sum += raw[x.id]; });
+      if (sum <= 0) return;
+      var w2 = {}; state.criteria.forEach(function (x) { w2[x.id] = raw[x.id] / sum; });
+      if (ranked(values(v, w2))[0].id !== winner.id) flips.push(c);
+    });
+    var critical = flips.length ? flips.sort(function (a, b) { return (b.weight || 0) - (a.weight || 0); })[0]
+                                : state.criteria.slice().sort(function (a, b) { return (b.weight || 0) - (a.weight || 0); })[0];
+    // deal-breakers (non-compensatory guardrail)
+    var flags = {}; state.options.forEach(function (o) { flags[o.id] = []; });
+    state.criteria.forEach(function (c) {
+      if (!c.essential) return;
+      state.options.forEach(function (o) { var s = state.scores[o.id] && state.scores[o.id][c.id]; s = (s == null ? 50 : s); if (s < 40) flags[o.id].push(c.name); });
+    });
+    return { v: v, w: w, val: val, rk: rk, winner: winner, margin: margin, robustness: robustness, critical: critical, flags: flags };
+  }
+
+  function sResults() {
+    var R = compute();
+    setGauge(R.robustness, 'وضوح القرار ' + R.robustness + '%');
+    var maxV = R.val[R.rk[0].id] || 1;
+    var badge = R.robustness >= 80 ? { c: 'dec', t: 'قرار حاسم ✓' } : R.robustness >= 55 ? { c: 'close', t: 'قرار متقارب' } : { c: 'sens', t: 'قرار حسّاس' };
+    var gutMatch = state.gut === R.winner.id;
+    var gutName = (find(state.options, state.gut) || {}).name || '';
+    // pick a clean winner respecting deal-breakers
+    var cleanWinner = R.rk.filter(function (o) { return R.flags[o.id].length === 0; })[0] || R.winner;
+
+    var rows = R.rk.map(function (o, i) {
+      var pct = (R.val[o.id] / maxV * 100);
+      var df = R.flags[o.id].length ? '<div class="flag">⚠️ يفشل في شرطٍ أساسيّ: ' + R.flags[o.id].map(esc).join('، ') + '</div>' : '';
+      return '<div class="res-row' + (o.id === cleanWinner.id ? ' win' : '') + '">' +
+        '<div class="res-head"><span>' + (o.id === cleanWinner.id ? '👑 ' : (i + 1) + '. ') + esc(o.name) + '</span><span class="sc">' + Math.round(R.val[o.id] * 100) + '</span></div>' +
+        '<div class="res-track"><div class="res-fill" style="width:0" data-w="' + pct.toFixed(1) + '"></div></div>' + df + '</div>';
+    }).join('');
+
+    var humility = R.robustness >= 80
+      ? 'النتيجة متينة: يبقى المتصدّر هو الأفضل في الغالبية العظمى من سيناريوهات الأوزان.'
+      : 'النتيجة غير حاسمة: الفارق ضئيل ويتغيّر المتصدّر بسهولة عند تعديل الأوزان. المعيار الأكثر حسماً هو <b>' + esc(R.critical.name) + '</b> — راجِع وزنه وتقييمك فيه، أو اجمع بياناتٍ أكثر قبل الحسم.';
+
+    app.innerHTML =
+      '<div class="card">' +
+      '<div class="step-tag">النتيجة</div>' +
+      '<div class="verdict"><div class="vbig">👑 ' + esc(cleanWinner.name) + '</div>' +
+      '<div class="badge ' + badge.c + '">' + badge.t + ' · متانة ' + R.robustness + '%</div></div>' +
+      '<div class="res-rows">' + rows + '</div>' +
+      '<div class="gut-line">' + (gutMatch
+        ? '✅ <b style="color:var(--green)">طابق حدسك المنهج</b> — ميلك إلى «' + esc(gutName) + '» يتّسق مع اعتباراتك. ثقةٌ مضاعفة.'
+        : '🔁 <b style="color:var(--gold)">اختلف حدسك عن المنهج</b> — ملتَ إلى «' + esc(gutName) + '»، بينما رجّحت اعتباراتُك «' + esc(cleanWinner.name) + '». تأمّل الفرق: أهو وزنٌ أغفلته، أم معلومةٌ يعرفها حدسك ولم تُدخلها؟') + '</div>' +
+      '<div class="note">' + humility + '</div>' +
+      '<div class="nav" style="flex-wrap:wrap">' +
+        '<button class="btn" id="copy">انسخ ملخّص قراري 📤</button>' +
+        '<button class="btn back" id="reweigh">↔ أعِد الموازنة</button>' +
+        '<button class="btn back" id="link">🔗 احفظ كرابط</button>' +
+        '<button class="btn back" id="again">↺ ابدأ من جديد</button>' +
+      '</div></div>';
+
+    setTimeout(function () { app.querySelectorAll('[data-w]').forEach(function (f) { f.style.width = f.getAttribute('data-w') + '%'; }); }, 60);
+    app.querySelector('#reweigh').addEventListener('click', function () { go(4); });
+    app.querySelector('#again').addEventListener('click', restart);
+    app.querySelector('#copy').addEventListener('click', function () {
+      var txt = 'قراري: ' + state.decision + '\nالأنسب: ' + cleanWinner.name + ' (متانة ' + R.robustness + '%)\nالترتيب: ' +
+        R.rk.map(function (o) { return o.name + ' ' + Math.round(R.val[o.id] * 100); }).join(' · ') +
+        '\nالمعيار الأكثر حسماً: ' + R.critical.name + '\n— عبر «بوصلة القرار» ' + location.href.split('#')[0];
+      copy(txt, 'نُسخ ملخّص قرارك');
+    });
+    app.querySelector('#link').addEventListener('click', function () {
+      try {
+        var data = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+        var url = location.href.split('#')[0] + '#d=' + data;
+        copy(url, 'نُسخ رابط قرارك — شاركه أو احفظه');
+      } catch (e) { showToast('تعذّر إنشاء الرابط'); }
+    });
+  }
+
+  // —— helpers ——
+  function find(arr, id2) { for (var i = 0; i < arr.length; i++) if (arr[i].id === id2) return arr[i]; return null; }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]; }); }
+  function copy(t, ok) { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { showToast(ok); }, function () { showToast('انسخ يدويًّا'); }); else showToast('النسخ غير مدعوم'); }
+
+  function restart() { state = fresh(); uid = 1; step = 0; si = 0; try { localStorage.removeItem('decision_state'); } catch (e) {} if (location.hash) history.replaceState(null, '', location.pathname); render(); }
+
+  document.getElementById('restart').addEventListener('click', restart);
+  document.getElementById('method').addEventListener('click', function () { document.getElementById('methodOverlay').classList.add('show'); });
+  document.getElementById('methodClose').addEventListener('click', function () { document.getElementById('methodOverlay').classList.remove('show'); });
+  document.getElementById('methodOverlay').addEventListener('click', function (e) { if (e.target.id === 'methodOverlay') e.currentTarget.classList.remove('show'); });
+
+  // —— boot: shared link → load; else resume; else fresh ——
+  function boot() {
+    var m = location.hash.match(/#d=(.+)$/);
+    if (m) { try { state = JSON.parse(decodeURIComponent(escape(atob(m[1])))); uid = 1000; step = 8; si = 0; render(); return; } catch (e) {} }
+    var saved = load();
+    if (saved && saved.state && saved.state.decision) {
+      state = saved.state; step = saved.step || 0; si = 0; uid = 1000;
+      render();
+      // gentle resume note
+      if (step > 0 && step < 8) showToast('أكملنا من حيث توقّفت ↩');
+    } else { state = fresh(); step = 0; si = 0; render(); }
+  }
+  boot();
+})();
+</script>
+</body>
+</html>
