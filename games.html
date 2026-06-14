@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>اختبار الحدس · مونديال</title>
+<meta name="description" content="هل تصمد أمام التضليل؟ خمّن نتائج أشهر صدمات كأس العالم — ٥ أسئلة عشوائية من بنكٍ من ٢٠.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Shareable page. Works standalone; the optional "send result to the deck"
+     step uses Firebase (keys in live-config.js) to feed the live leaderboard. -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="live-config.js"></script>
+<style>
+  :root{
+    --bg:#0C0C10; --panel:#16161D; --line:#2A2A33;
+    --ink:#F6F2E8; --soft:#D3CCBE; --faint:#8C8578;
+    --gold:#E3B53E; --gold-soft:#F4D784; --red:#E0726A; --green:#6FCF97; --blue:#4A86E8;
+    --sans:"IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ min-height:100%; background:
+      radial-gradient(1200px 600px at 50% -10%, #15151d 0%, var(--bg) 60%);
+      color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; }
+  .page{ max-width:720px; margin:0 auto; padding:clamp(18px,4vw,40px) clamp(16px,4vw,28px) 48px; }
+  .hd{ display:flex; align-items:center; gap:14px; }
+  .hd .logo{ font-size:2.4rem; line-height:1; filter:drop-shadow(0 0 14px rgba(227,181,62,.45)); }
+  .ht{ font-weight:600; font-size:clamp(1.3rem,4vw,1.8rem); }
+  .hs{ color:var(--faint); font-size:clamp(.85rem,2.6vw,1rem); margin-top:2px; }
+  .ft{ color:var(--faint); font-size:.82rem; text-align:center; margin-top:26px; line-height:1.7; }
+
+  .card{ background:var(--panel); border:1px solid var(--line); border-radius:22px;
+    padding:clamp(18px,4.5vw,30px); margin-top:18px; box-shadow:0 18px 50px rgba(0,0,0,.45); }
+
+  /* HUD */
+  .hud{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; font-size:.92rem; color:var(--soft); margin-bottom:14px; }
+  .hud b{ color:var(--gold); font-weight:600; font-size:1.12em; }
+  .hud .prog{ margin-inline-start:auto; color:var(--faint); }
+
+  /* start + final */
+  .center{ text-align:center; }
+  .lead{ font-size:clamp(1.1rem,3.4vw,1.5rem); font-weight:600; line-height:1.5; }
+  .muted{ color:var(--soft); font-size:clamp(.95rem,2.7vw,1.1rem); line-height:1.7; margin-top:12px; }
+  .rules{ text-align:start; max-width:520px; margin:16px auto 0; color:var(--soft); line-height:1.9; font-size:clamp(.92rem,2.6vw,1.05rem); }
+  .rules b{ color:var(--gold); }
+  .big{ font-weight:600; font-size:clamp(1.6rem,6vw,2.4rem); color:var(--gold); }
+
+  /* match */
+  .match{ display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap;
+    font-weight:600; font-size:clamp(1.15rem,4.4vw,1.7rem); }
+  .side{ display:inline-flex; align-items:center; gap:8px; }
+  .flag{ font-size:1.5em; line-height:1; }
+  .vs{ color:var(--faint); font-size:.62em; font-weight:400; }
+  .fav{ text-align:center; color:var(--faint); font-size:.92rem; margin-top:8px; }
+
+  /* dial */
+  .dial{ margin-top:22px; position:relative; padding-bottom:30px; }
+  .zones{ display:flex; justify-content:space-between; font-size:.82rem; color:var(--soft); margin-bottom:6px; }
+  .zones span:first-child{ color:var(--red); } .zones span:last-child{ color:var(--green); }
+  input[type=range]{ width:100%; accent-color:var(--gold); height:30px; cursor:ew-resize; }
+  .real{ position:absolute; top:52px; inset-inline-start:50%; width:2px; height:26px; background:var(--gold);
+    opacity:0; transform:translateX(-50%); transition:inset-inline-start .8s cubic-bezier(.2,.8,.2,1), opacity .3s; }
+  .real.show{ opacity:1; }
+  .real::after{ content:'الواقع'; position:absolute; bottom:-18px; inset-inline-start:50%;
+    transform:translateX(-50%); font-size:.72rem; color:var(--gold); white-space:nowrap; }
+
+  /* nudges */
+  .nudge{ margin-top:14px; display:flex; flex-direction:column; gap:8px; }
+  .nmsg{ background:rgba(224,114,106,.12); border:1px solid rgba(224,114,106,.4); border-radius:12px;
+    padding:9px 13px; font-size:clamp(.88rem,2.6vw,1.05rem); animation:nin .35s ease both; }
+  @keyframes nin{ from{opacity:0;transform:translateY(-6px);} to{opacity:1;transform:none;} }
+  .ntimer{ color:var(--gold); font-weight:600; }
+
+  /* actions + reveal */
+  .actions{ margin-top:16px; display:flex; gap:11px; flex-wrap:wrap; }
+  .btn{ font-family:var(--sans); font-weight:600; font-size:clamp(.95rem,2.7vw,1.1rem); color:#1A1206;
+    background:var(--gold); border:none; border-radius:12px; padding:12px 24px; cursor:pointer;
+    transition:filter .2s, transform .08s; }
+  .btn:hover{ filter:brightness(1.07); } .btn:active{ transform:translateY(1px); }
+  .btn.ghost{ background:transparent; color:var(--soft); border:1.5px solid var(--line); }
+  .reveal{ margin-top:14px; opacity:0; max-height:0; overflow:hidden; transition:opacity .3s ease; }
+  .reveal.show{ opacity:1; max-height:480px; }
+  .rresult{ font-weight:600; font-size:clamp(1.05rem,3.4vw,1.4rem); }
+  .rfeed{ color:var(--soft); font-size:clamp(.92rem,2.6vw,1.1rem); margin-top:6px; line-height:1.6; }
+  .shock{ margin-top:12px; }
+  .strack{ height:14px; background:var(--bg); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .sfill{ height:100%; width:0; background:linear-gradient(90deg,var(--red),var(--gold)); transition:width .9s ease; }
+  .slbl{ font-size:.82rem; color:var(--faint); margin-top:5px; }
+
+  /* final */
+  .scores{ display:flex; justify-content:center; gap:clamp(20px,7vw,52px); margin-top:18px; flex-wrap:wrap; }
+  .metric .figure{ font-weight:600; font-size:clamp(2rem,9vw,3rem); color:var(--gold); line-height:1; }
+  .metric .label{ color:var(--soft); font-size:.92rem; margin-top:6px; }
+  .key{ font-size:clamp(.98rem,2.8vw,1.18rem); line-height:1.7; margin-top:16px; }
+  .key b{ color:var(--gold); }
+  .toast{ position:fixed; inset-block-end:24px; inset-inline:0; margin-inline:auto; width:max-content;
+    background:var(--gold); color:#1A1206; font-weight:600; padding:10px 20px; border-radius:999px;
+    opacity:0; transform:translateY(10px); transition:opacity .25s, transform .25s; pointer-events:none; z-index:9; }
+  .toast.show{ opacity:1; transform:none; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="hd">
+    <span class="logo">🏆</span>
+    <div>
+      <div class="ht">اختبار الحدس</div>
+      <div class="hs">صدمات كأس العالم — هل تصمد أمام التضليل؟</div>
+    </div>
+  </header>
+  <main id="app"></main>
+  <div class="ft">٥ أسئلة عشوائية من بنكٍ مكوّن من ٢٠ · كل النتائج حقيقية وموثّقة · «رسائل التضليل» جزءٌ من اللعبة</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  var L = (window.LIVE_INIT ? window.LIVE_INIT() : { ready: false, room: 'main' });
+  // —— 20-question bank: famous World Cup shocks (Arab teams & others). ——
+  // Each item is one real match; the dial guesses the FIRST team's result.
+  // fav = who the world favoured. realOutcome ∈ win|draw|loss (for the first team).
+  var BANK = [
+    { team:'السعودية', tf:'🇸🇦', opp:'الأرجنتين', of:'🇦🇷', year:'2022', fav:'الأرجنتين', score:'2–1', out:'win', shock:96, rev:'فازت السعودية على بطلة العالم القادمة — من أكبر مفاجآت التاريخ.' },
+    { team:'تونس', tf:'🇹🇳', opp:'فرنسا', of:'🇫🇷', year:'2022', fav:'فرنسا', score:'1–0', out:'win', shock:78, rev:'أسقطت تونس حاملةَ لقب 2018.' },
+    { team:'الجزائر', tf:'🇩🇿', opp:'ألمانيا الغربية', of:'🇩🇪', year:'1982', fav:'ألمانيا الغربية', score:'2–1', out:'win', shock:90, rev:'صدمت الجزائر بطلَ أوروبا في أوّل ظهورٍ لها.' },
+    { team:'المغرب', tf:'🇲🇦', opp:'البرتغال', of:'🇵🇹', year:'2022', fav:'البرتغال', score:'1–0', out:'win', shock:88, rev:'المغرب يبلغ نصف النهائي — أوّل منتخبٍ عربيّ وإفريقيّ.' },
+    { team:'المغرب', tf:'🇲🇦', opp:'بلجيكا', of:'🇧🇪', year:'2022', fav:'بلجيكا', score:'2–0', out:'win', shock:80, rev:'المغرب يطيح بأحد أبرز مرشّحي البطولة.' },
+    { team:'المغرب', tf:'🇲🇦', opp:'إسبانيا', of:'🇪🇸', year:'2022', fav:'إسبانيا', score:'0–0', out:'win', shock:85, rev:'تعادلٌ ثم فوزٌ بركلات الترجيح 3–0 — المغرب يُقصي إسبانيا.' },
+    { team:'قطر', tf:'🇶🇦', opp:'هولندا', of:'🇳🇱', year:'2022', fav:'هولندا', score:'0–2', out:'loss', shock:22, rev:'خسرت قطر وخرجت كأوّل مضيفٍ بثلاث هزائم — أحيانًا المرشّح يصدُق.' },
+    { team:'تونس', tf:'🇹🇳', opp:'المكسيك', of:'🇲🇽', year:'1978', fav:'المكسيك', score:'3–1', out:'win', shock:72, rev:'أوّل فوزٍ لمنتخبٍ عربيّ وإفريقيّ في تاريخ المونديال.' },
+    { team:'مصر', tf:'🇪🇬', opp:'هولندا', of:'🇳🇱', year:'1990', fav:'هولندا', score:'1–1', out:'draw', shock:60, rev:'تعادلٌ تاريخيّ مع بطلة أوروبا آنذاك.' },
+    { team:'المغرب', tf:'🇲🇦', opp:'البرتغال', of:'🇵🇹', year:'1986', fav:'البرتغال', score:'3–1', out:'win', shock:70, rev:'المغرب يتصدّر مجموعته (مع إنجلترا والبرتغال) — أوّل عربيّ يبلغ الدور الثاني.' },
+    { team:'كوريا الجنوبية', tf:'🇰🇷', opp:'ألمانيا', of:'🇩🇪', year:'2018', fav:'ألمانيا', score:'2–0', out:'win', shock:92, rev:'حاملة اللقب ألمانيا تخرج من الدور الأول!' },
+    { team:'اليابان', tf:'🇯🇵', opp:'ألمانيا', of:'🇩🇪', year:'2022', fav:'ألمانيا', score:'2–1', out:'win', shock:84, rev:'اليابان تقلب تأخّرها وتصدم ألمانيا.' },
+    { team:'اليابان', tf:'🇯🇵', opp:'إسبانيا', of:'🇪🇸', year:'2022', fav:'إسبانيا', score:'2–1', out:'win', shock:82, rev:'اليابان تتصدّر مجموعةً تضمّ إسبانيا وألمانيا.' },
+    { team:'الكاميرون', tf:'🇨🇲', opp:'الأرجنتين', of:'🇦🇷', year:'1990', fav:'الأرجنتين', score:'1–0', out:'win', shock:90, rev:'الكاميرون تصدم الأرجنتين في افتتاح المونديال.' },
+    { team:'الكاميرون', tf:'🇨🇲', opp:'البرازيل', of:'🇧🇷', year:'2022', fav:'البرازيل', score:'1–0', out:'win', shock:74, rev:'أبو بكر يسقط البرازيل في الوقت القاتل.' },
+    { team:'السنغال', tf:'🇸🇳', opp:'فرنسا', of:'🇫🇷', year:'2002', fav:'فرنسا', score:'1–0', out:'win', shock:90, rev:'السنغال تهزم حاملةَ اللقب فرنسا في المباراة الافتتاحية.' },
+    { team:'كوريا الشمالية', tf:'🇰🇵', opp:'إيطاليا', of:'🇮🇹', year:'1966', fav:'إيطاليا', score:'1–0', out:'win', shock:92, rev:'من أعرق المفاجآت — كوريا الشمالية تقصي إيطاليا.' },
+    { team:'الولايات المتحدة', tf:'🇺🇸', opp:'إنجلترا', of:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', year:'1950', fav:'إنجلترا', score:'1–0', out:'win', shock:93, rev:'«معجزة بيلو هوريزونتي» — أمريكا تهزم إنجلترا.' },
+    { team:'البرازيل', tf:'🇧🇷', opp:'ألمانيا', of:'🇩🇪', year:'2014', fav:'البرازيل', score:'1–7', out:'loss', shock:95, rev:'البرازيل المضيفة تنهار 1–7 في نصف النهائي — صدمةٌ معاكسة.' },
+    { team:'غانا', tf:'🇬🇭', opp:'الولايات المتحدة', of:'🇺🇸', year:'2010', fav:'الولايات المتحدة', score:'2–1', out:'win', shock:62, rev:'غانا تبلغ ربع النهائي — ثاني إفريقيّ يصل لهذا الدور.' }
+  ];
+  var NUDGES = ['crowd', 'expert', 'doubt', 'timer'];
+
+  var app = document.getElementById('app');
+  var toast = document.getElementById('toast');
+  var S = {};
+
+  function shuffle(a) {
+    a = a.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+  function zone(v) { return v < 34 ? 'loss' : (v < 67 ? 'draw' : 'win'); }
+  function realPos(o) { return o === 'loss' ? 16 : (o === 'draw' ? 50 : 84); }
+  function clearTimer() { if (S.timer) { clearInterval(S.timer); S.timer = null; } }
+  function showToast(msg) {
+    toast.textContent = msg; toast.classList.add('show');
+    setTimeout(function () { toast.classList.remove('show'); }, 1600);
+  }
+
+  function startScreen() {
+    clearTimer();
+    app.innerHTML =
+      '<div class="card center">' +
+      '<div class="lead">خمِّن نتيجة كل مباراة… ثم اصمد أمام التضليل.</div>' +
+      '<div class="rules">' +
+      '• تضبط <b>قرص الحدس</b> (خسارة ← تعادل ← فوز) وتثبّته.<br>' +
+      '• تظهر <b>رسالة تُحاول تحريفك</b> — أتبقى على حدسك أم تغيّره؟<br>' +
+      '• يُكشف <b>الواقع</b>، وتُحسب نقاطك و<b>صلابة حدسك</b>.<br>' +
+      '• ٥ أسئلة عشوائية في كل مرّة — لا جولتان متشابهتان.' +
+      '</div>' +
+      '<div class="actions" style="justify-content:center;margin-top:22px">' +
+      '<button class="btn" id="go">ابدأ اللعب ▶</button></div>' +
+      '</div>';
+    document.getElementById('go').addEventListener('click', start);
+  }
+
+  function start() {
+    clearTimer();
+    var cards = shuffle(BANK).slice(0, 5).map(function (c, idx) {
+      var d = {}; for (var k in c) d[k] = c[k];
+      d.nudgeType = (idx === 4) ? 'all' : NUDGES[Math.floor(Math.random() * NUDGES.length)];
+      return d;
+    });
+    S = { cards: cards, i: 0, score: 0, streak: 0, correct: 0, solid: 0, firstCorrect: 0, stuckHeldCorrect: 0, caved: 0, timer: null };
+    renderCard();
+  }
+
+  function hudHTML() {
+    return '<div class="hud"><span>النقاط <b>' + S.score + '</b></span>' +
+      '<span>السلسلة <b>' + S.streak + '</b>🔥</span>' +
+      '<span>الصلابة <b>' + S.solid + '</b></span>' +
+      '<span class="prog">' + (S.i + 1) + ' / ' + S.cards.length + '</span></div>';
+  }
+
+  function renderCard() {
+    clearTimer();
+    var m = S.cards[S.i];
+    app.innerHTML =
+      '<div class="card">' + hudHTML() +
+      '<div class="match">' +
+        '<span class="side"><span class="flag">' + m.tf + '</span>' + m.team + '</span>' +
+        '<span class="vs">ضد</span>' +
+        '<span class="side"><span class="flag">' + m.of + '</span>' + m.opp + '</span>' +
+      '</div>' +
+      '<div class="fav">المرشّح بإجماع الخبراء: ' + m.fav + ' · ' + m.year + '</div>' +
+      '<div class="dial">' +
+        '<div class="zones"><span>خسارة ' + m.team + '</span><span>تعادل</span><span>فوز ' + m.team + '</span></div>' +
+        '<input type="range" min="0" max="100" value="50" id="dial" aria-label="قرص الحدس">' +
+        '<div class="real" id="real"></div>' +
+      '</div>' +
+      '<div class="nudge" id="nudge"></div>' +
+      '<div class="actions" id="actions"></div>' +
+      '<div class="reveal" id="reveal"></div>' +
+      '</div>';
+    S.phase = 'instinct';
+    setActions([{ label: 'أثبّت حدسي 🔒', fn: lockInstinct }]);
+  }
+
+  function setActions(btns) {
+    var a = document.getElementById('actions'); a.innerHTML = '';
+    btns.forEach(function (b) {
+      var el = document.createElement('button');
+      el.className = 'btn' + (b.ghost ? ' ghost' : ''); el.textContent = b.label;
+      el.addEventListener('click', b.fn); a.appendChild(el);
+    });
+  }
+
+  function nudgeMsgs(m) {
+    if (m.nudgeType === 'crowd')  return ['🗣️ <strong>همسة الغرفة:</strong> «الجميع يراهن على ' + m.fav + '… لا تكن الوحيد المخطئ.»'];
+    if (m.nudgeType === 'expert') return ['🎓 <strong>صوت الخبير:</strong> «كل التوقّعات الرسمية ترجّح ' + m.fav + ' بثقةٍ تامّة.»'];
+    if (m.nudgeType === 'doubt')  return ['😬 <strong>بذرة الشك:</strong> «متأكّد من حدسك؟ كثيرون ندموا على جرأتهم في آخر لحظة.»'];
+    if (m.nudgeType === 'timer')  return ['⏱️ <strong>قرارٌ تحت الضغط:</strong> احسم بسرعة — الوقت ينفد!'];
+    return [
+      '🗣️ <strong>الغرفة:</strong> «الكل واثقٌ من ' + m.fav + ' — سايرهم!»',
+      '🎓 <strong>الخبير:</strong> «المنطق والأرقام مع ' + m.fav + '.»',
+      '😬 <strong>الشك:</strong> «لا تُخاطر بحدسٍ متهوّر الآن…»'
+    ];
+  }
+
+  function lockInstinct() {
+    S.firstVal = +document.getElementById('dial').value;
+    S.firstZone = zone(S.firstVal); S.phase = 'tempt';
+    var m = S.cards[S.i], nudge = document.getElementById('nudge');
+    nudge.innerHTML = '';
+    nudgeMsgs(m).forEach(function (t) {
+      var d = document.createElement('div'); d.className = 'nmsg'; d.innerHTML = t; nudge.appendChild(d);
+    });
+    if (m.nudgeType === 'timer' || m.nudgeType === 'all') {
+      var td = document.createElement('div'); td.className = 'nmsg';
+      var sp = document.createElement('span'); sp.className = 'ntimer';
+      td.appendChild(document.createTextNode('⏱️ القرار ينتهي خلال: ')); td.appendChild(sp);
+      nudge.appendChild(td);
+      var t = 8; sp.textContent = t + 'ث';
+      S.timer = setInterval(function () { t--; if (t < 0) t = 0; sp.textContent = t + 'ث'; if (t <= 0) { clearTimer(); commit(true); } }, 1000);
+    }
+    setActions([
+      { label: 'أتمسّك بحدسي 💪', fn: function () { commit(true); } },
+      { label: 'أغيّر وأؤكّد', ghost: true, fn: function () { commit(false); } }
+    ]);
+  }
+
+  function commit(stuck) {
+    if (S.phase !== 'tempt') return;
+    clearTimer();
+    var m = S.cards[S.i], dial = document.getElementById('dial');
+    S.phase = 'reveal'; dial.disabled = true;
+    var finalVal = stuck ? S.firstVal : +dial.value;
+    var finalZone = stuck ? S.firstZone : zone(finalVal);
+    if (stuck) dial.value = S.firstVal;
+    var real = document.getElementById('real');
+    real.style.insetInlineStart = realPos(m.out) + '%'; real.classList.add('show');
+
+    var correct = finalZone === m.out;
+    var firstWasCorrect = S.firstZone === m.out;
+    var held = finalZone === S.firstZone;
+    if (firstWasCorrect) S.firstCorrect++;
+    if (held) S.solid++;
+    if (firstWasCorrect && held) S.stuckHeldCorrect++;
+    if (firstWasCorrect && !held && !correct) S.caved++;
+
+    var base = correct ? 100 : 0;
+    var conv = correct ? Math.round(Math.abs(finalVal - 50) / 50 * 50) : 0;
+    if (correct) { S.streak++; S.correct++; } else { S.streak = 0; }
+    var mult = 1 + Math.max(0, S.streak - 1) * 0.25;
+    var gained = Math.round((base + conv) * mult);
+    S.score += gained;
+
+    var fb;
+    if (correct && held && firstWasCorrect) fb = '💎 صمدتَ أمام التضليل وكنت محقًّا! مكافأة صلابة.';
+    else if (firstWasCorrect && !held && !correct) fb = '📉 كان حدسك الأوّل صائبًا… لكن التضليل أوقعك!';
+    else if (!firstWasCorrect && correct) fb = '🔁 غيّرتَ إلى الصواب — أحيانًا التراجع حكمة.';
+    else if (correct) fb = '✅ أصبت!';
+    else fb = '❌ لم تُصب — والمفاجأة أكبر مما تظن.';
+
+    document.getElementById('reveal').innerHTML =
+      '<div class="rresult">النتيجة: ' + m.team + ' ' + m.score + ' ' + m.opp + ' · <span style="color:var(--gold)">+' + gained + '</span></div>' +
+      '<div class="rfeed">' + m.rev + '</div>' +
+      '<div class="rfeed">' + fb + '</div>' +
+      '<div class="shock"><div class="strack"><div class="sfill" id="sfill"></div></div><div class="slbl">مقياس الصدمة: ' + m.shock + '٪</div></div>';
+    var rv = document.getElementById('reveal'); rv.classList.add('show');
+    var ff = document.getElementById('sfill');
+    requestAnimationFrame(function () { requestAnimationFrame(function () { if (ff) ff.style.width = m.shock + '%'; }); });
+
+    var last = S.i === S.cards.length - 1;
+    setActions([{ label: last ? 'النتيجة 🏆' : 'التالي ←', fn: function () { if (last) finalScreen(); else { S.i++; renderCard(); } } }]);
+  }
+
+  function finalScreen() {
+    clearTimer();
+    var n = S.cards.length, title;
+    if (S.correct >= 4 && S.stuckHeldCorrect >= 3) title = 'حدسٌ من فولاذ 💎';
+    else if (S.caved >= 2) title = 'ريشةٌ في مهبّ الرأي 🪶';
+    else if (S.correct >= 3) title = 'قارئ المفاجآت 🔮';
+    else title = 'الحدس ما زال يتدرّب 🌱';
+    var key2 = S.caved > 0 ? ' — وتراجعتَ عن حدسٍ صائب <b>' + S.caved + '</b> مرّة بفعل التضليل.' : '.';
+    app.innerHTML =
+      '<div class="card center">' +
+      '<div class="big">' + title + '</div>' +
+      '<div class="scores">' +
+        '<div class="metric"><div class="figure">' + S.score + '</div><div class="label">النقاط</div></div>' +
+        '<div class="metric"><div class="figure">' + S.correct + '/' + n + '</div><div class="label">توقّعات صائبة</div></div>' +
+        '<div class="metric"><div class="figure">' + S.solid + '/' + n + '</div><div class="label">تمسّكت بحدسك</div></div>' +
+      '</div>' +
+      '<div class="key">حين كان حدسك الأوّل صائبًا، تمسّكتَ به <b>' + S.stuckHeldCorrect + '</b> من <b>' + S.firstCorrect + '</b> مرّة' + key2 + '</div>' +
+      '<div class="key" style="color:var(--soft)">الدرس: التوقّعات «الواثقة» كثيرًا ما تُخطئ — وحدسك المدروس قد يكون أصدق.</div>' +
+      (L.ready
+        ? '<div id="sendbox" style="margin-top:20px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">' +
+            '<input id="pname" maxlength="24" placeholder="اسمك للوحة العرض" ' +
+              'style="background:var(--panel);border:1.5px solid var(--line);border-radius:12px;color:var(--ink);' +
+              'font-family:var(--sans);font-size:1rem;padding:11px 16px;min-width:200px;text-align:center">' +
+            '<button class="btn" id="send">أرسل نتيجتي للعرض 📡</button></div>'
+        : '<div class="key" style="color:var(--faint)">لإرسال نتيجتك إلى لوحة العرض، فعِّل Firebase في live-config.js.</div>') +
+      '<div class="actions" style="justify-content:center;margin-top:16px">' +
+        '<button class="btn ghost" id="share">انسخ نتيجتي 📤</button>' +
+        '<button class="btn ghost" id="again">أسئلة جديدة 🔄</button>' +
+      '</div></div>';
+    document.getElementById('again').addEventListener('click', start);
+    if (L.ready) {
+      var sendBtn = document.getElementById('send');
+      sendBtn.addEventListener('click', function () {
+        var nm = (document.getElementById('pname').value || '').trim() || 'لاعب';
+        sendBtn.disabled = true; sendBtn.textContent = 'جارٍ الإرسال…';
+        L.db.collection('rooms').doc(L.room).collection('scores')
+          .add({ name: nm.slice(0, 24), score: S.score, title: title, ts: firebase.firestore.FieldValue.serverTimestamp() })
+          .then(function () { document.getElementById('sendbox').innerHTML = '<div class="key" style="color:var(--green)">✅ ظهرت نتيجتك على لوحة العرض!</div>'; })
+          .catch(function (e) { sendBtn.disabled = false; sendBtn.textContent = 'أعد الإرسال'; showToast('تعذّر الإرسال: ' + e.message); });
+      });
+    }
+    document.getElementById('share').addEventListener('click', function () {
+      var text = 'سجّلت ' + S.score + ' نقطة في «اختبار الحدس» (' + title + ') 🏆 — هل تصمد أمام التضليل؟ ' + location.href;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { showToast('نُسخت النتيجة — الصقها وأرسلها!'); },
+          function () { showToast('انسخ يدويًّا: ' + S.score + ' نقطة'); });
+      } else { showToast('نتيجتك: ' + S.score + ' نقطة'); }
+    });
+  }
+
+  // Arrow keys shouldn't scroll the page while on the dial.
+  document.addEventListener('keydown', function (e) {
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && document.activeElement &&
+        document.activeElement.id === 'dial') e.stopPropagation();
+  });
+
+  startScreen();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>توقّع بطل كأس 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#0C0C10; --panel:#16161D; --line:#2A2A33; --ink:#F6F2E8; --soft:#D3CCBE; --faint:#8C8578;
+    --gold:#E3B53E; --gold-soft:#F4D784; --blue:#4A86E8;
+    --sans:"IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif; }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ min-height:100%; background:radial-gradient(900px 500px at 50% -10%,#15151d,var(--bg) 60%);
+    color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:520px; margin:0 auto; padding:26px 18px 44px; }
+  .hd{ text-align:center; }
+  .hd .logo{ font-size:2.6rem; filter:drop-shadow(0 0 14px rgba(227,181,62,.45)); }
+  .ht{ font-weight:600; font-size:1.5rem; margin-top:6px; }
+  .hs{ color:var(--faint); font-size:.95rem; margin-top:4px; }
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:24px; }
+  .pick{ display:flex; align-items:center; gap:10px; background:var(--panel); border:1.5px solid var(--line);
+    border-radius:16px; padding:16px 14px; font-family:var(--sans); font-size:1.1rem; font-weight:500;
+    color:var(--ink); cursor:pointer; transition:transform .12s, border-color .2s, background .2s; }
+  .pick:hover,.pick:active{ border-color:var(--gold); transform:translateY(-2px); }
+  .pick .fl{ font-size:1.7rem; line-height:1; }
+  .msg{ text-align:center; margin-top:18px; color:var(--soft); font-size:1rem; line-height:1.7; }
+  .done{ text-align:center; background:var(--panel); border:1px solid var(--line); border-radius:18px;
+    padding:22px; margin-top:18px; }
+  .done .big{ font-size:1.4rem; font-weight:600; color:var(--gold); }
+  .bars{ margin-top:18px; display:flex; flex-direction:column; gap:9px; }
+  .row{ display:grid; grid-template-columns:6.5em 1fr 2.6em; align-items:center; gap:10px; }
+  .rname{ font-size:.95rem; color:var(--soft); }
+  .track{ height:20px; background:var(--bg); border:1px solid var(--line); border-radius:7px; overflow:hidden; }
+  .fill{ height:100%; width:0; background:linear-gradient(90deg,var(--gold),var(--gold-soft)); transition:width .5s ease; }
+  .rval{ font-weight:600; color:var(--gold); text-align:center; }
+  .ft{ text-align:center; color:var(--faint); font-size:.82rem; margin-top:22px; }
+  .warn{ background:rgba(224,114,106,.12); border:1px solid rgba(224,114,106,.4); border-radius:12px;
+    padding:14px; color:var(--ink); font-size:.92rem; line-height:1.7; margin-top:18px; }
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="live-config.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <div class="hd">
+    <div class="logo">🏆</div>
+    <div class="ht">مَن يرفع كأس 2026؟</div>
+    <div class="hs">اختر توقّعك — يظهر مباشرةً على شاشة العرض</div>
+  </div>
+  <div id="app"></div>
+  <div class="ft">توقّعك مجهول الاسم · يظهر ضمن نتائج الغرفة في العرض</div>
+</div>
+
+<script>
+(function () {
+  var TEAMS = [
+    { k:'es', n:'إسبانيا', f:'🇪🇸' }, { k:'fr', n:'فرنسا', f:'🇫🇷' },
+    { k:'en', n:'إنجلترا', f:'🏴󠁧󠁢󠁥󠁮󠁧󠁿' }, { k:'ar', n:'الأرجنتين', f:'🇦🇷' },
+    { k:'pt', n:'البرتغال', f:'🇵🇹' }, { k:'br', n:'البرازيل', f:'🇧🇷' },
+    { k:'de', n:'ألمانيا', f:'🇩🇪' }, { k:'nl', n:'هولندا', f:'🇳🇱' }
+  ];
+  var NAME = {}; TEAMS.forEach(function (t) { NAME[t.k] = t.f + ' ' + t.n; });
+  var L = window.LIVE_INIT(); var app = document.getElementById('app');
+  var votedKey = 'wc_voted_' + L.room;
+
+  if (!L.ready) {
+    app.innerHTML = '<div class="warn">لم يُضبط الإعداد بعد. على المنظِّم تعبئة <b>live-config.js</b> بمفاتيح Firebase ونشر الصفحة.</div>';
+    return;
+  }
+
+  function vote(k) {
+    L.db.collection('rooms').doc(L.room).collection('votes')
+      .add({ team: k, ts: firebase.firestore.FieldValue.serverTimestamp() })
+      .then(function () { try { localStorage.setItem(votedKey, k); } catch (e) {} showResults(k); })
+      .catch(function (e) { app.innerHTML = '<div class="warn">تعذّر الإرسال: ' + e.message + '</div>'; });
+  }
+
+  function renderPicker() {
+    var html = '<div class="grid">';
+    TEAMS.forEach(function (t) { html += '<button class="pick" data-k="' + t.k + '"><span class="fl">' + t.f + '</span>' + t.n + '</button>'; });
+    html += '</div><div class="msg">اضغط على المنتخب الذي تتوقّع أن يرفع الكأس.</div>';
+    app.innerHTML = html;
+    app.querySelectorAll('.pick').forEach(function (b) { b.addEventListener('click', function () { vote(b.getAttribute('data-k')); }); });
+  }
+
+  function showResults(mine) {
+    app.innerHTML = '<div class="done"><div class="big">✅ سُجّل توقّعك: ' + NAME[mine] + '</div>' +
+      '<div class="msg">شاهد نتائج الغرفة تتجمّع لحظيًّا:</div><div class="bars" id="bars"></div></div>';
+    var bars = document.getElementById('bars');
+    L.db.collection('rooms').doc(L.room).collection('votes').onSnapshot(function (snap) {
+      var tally = {}, total = 0; TEAMS.forEach(function (t) { tally[t.k] = 0; });
+      snap.forEach(function (d) { var k = d.data().team; if (k in tally) { tally[k]++; total++; } });
+      var max = 1; TEAMS.forEach(function (t) { if (tally[t.k] > max) max = tally[t.k]; });
+      var rows = TEAMS.slice().sort(function (a, b) { return tally[b.k] - tally[a.k]; });
+      bars.innerHTML = rows.map(function (t) {
+        return '<div class="row"><span class="rname">' + t.f + ' ' + t.n + '</span>' +
+          '<div class="track"><div class="fill" style="width:' + (tally[t.k] / max * 100) + '%"></div></div>' +
+          '<span class="rval">' + tally[t.k] + '</span></div>';
+      }).join('') + '<div class="ft">إجمالي التوقّعات: ' + total + '</div>';
+    });
+  }
+
+  var prev = null; try { prev = localStorage.getItem(votedKey); } catch (e) {}
+  if (prev) showResults(prev); else renderPicker();
+})();
+</script>
+</body>
+</html>

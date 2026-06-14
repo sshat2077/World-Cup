@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>كأس العالم 2026 · الألعاب التفاعلية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#0C0C10; --panel:#16161D; --line:#2A2A33; --ink:#F6F2E8; --soft:#D3CCBE; --faint:#8C8578;
+    --gold:#E3B53E; --gold-soft:#F4D784;
+    --sans:"IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif; }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ min-height:100%; background:radial-gradient(900px 500px at 50% -10%,#15151d,var(--bg) 60%);
+    color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:560px; margin:0 auto; padding:48px 20px; text-align:center; }
+  .logo{ font-size:3.2rem; filter:drop-shadow(0 0 16px rgba(227,181,62,.5)); }
+  h1{ font-weight:600; font-size:clamp(1.5rem,5vw,2.1rem); margin-top:8px; }
+  .sub{ color:var(--faint); margin-top:8px; font-size:1rem; }
+  .cards{ display:flex; flex-direction:column; gap:16px; margin-top:32px; }
+  a.card{ display:block; text-decoration:none; background:var(--panel); border:1.5px solid var(--line);
+    border-radius:18px; padding:22px; transition:transform .12s, border-color .2s; }
+  a.card:hover{ border-color:var(--gold); transform:translateY(-3px); }
+  .ct{ font-weight:600; font-size:1.3rem; color:var(--gold); }
+  .cd{ color:var(--soft); margin-top:6px; font-size:.98rem; line-height:1.6; }
+  .ft{ color:var(--faint); font-size:.82rem; margin-top:30px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">🏆</div>
+  <h1>كأس العالم 2026 — العب وتوقّع</h1>
+  <p class="sub">شارك توقّعاتك ونتائجك، وتظهر مباشرةً على شاشة العرض.</p>
+  <div class="cards">
+    <a class="card" href="predict.html">
+      <div class="ct">🔮 توقّع البطل</div>
+      <div class="cd">مَن يرفع كأس 2026؟ اختر توقّعك في ثانية.</div>
+    </a>
+    <a class="card" href="games.html">
+      <div class="ct">💎 اختبار الحدس</div>
+      <div class="cd">٥ أسئلة عن أشهر صدمات المونديال — هل تصمد أمام التضليل؟</div>
+    </a>
+  </div>
+  <p class="ft">تجربة جماعية حيّة · النتائج تظهر في العرض لحظيًّا</p>
+</div>
+</body>
+</html>
