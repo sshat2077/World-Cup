@@ -1,0 +1,248 @@
+/* ============================================================
+   Editorial — a presentation theme for the AI slide builder.
+
+   Warm off-white canvas, serif headings, a single muted accent.
+   Works in both directions: every layout rule uses logical
+   properties (start/end, padding-inline) so a slide reads
+   correctly whether it is dir="ltr" (English) or dir="rtl"
+   (Arabic). Set the direction on each <section class="slide">.
+
+   Recolor the whole deck by editing the tokens in :root below.
+   ============================================================ */
+
+:root {
+  /* ---- Extend Academy palette ---- */
+  /* Canvas */
+  --bg:          #FCFAF6;   /* warm near-white                 */
+  --bg-tint:     #F4EFE9;   /* deeper panel / section divider  */
+  --bg-ink:      #050505;   /* dark slides                     */
+
+  /* Type */
+  --ink:         #050505;   /* near-black                      */
+  --ink-soft:    #2D2D2D;   /* secondary text                  */
+  --ink-faint:   #6F6A64;   /* captions, page numbers          */
+  --on-ink:      #F4EFE9;   /* text on dark slides             */
+
+  /* Accent — Extend Academy orange */
+  --accent:      #FF812C;
+  --accent-soft: #FFA559;
+
+  /* Lines */
+  --rule:        #E6DFD5;
+
+  /* Fonts — loaded via <link> in the slide file head.
+     Extend Academy uses IBM Plex Sans Arabic throughout (covers Latin too),
+     so "serif" headings and "sans" body share the family for one clean voice. */
+  --serif: "IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --sans:  "IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Geometry */
+  --pad: clamp(48px, 6vw, 120px);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  background: var(--bg-ink);
+  font-family: var(--sans);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- Deck shell ------------------------------------------------ */
+#deck { position: fixed; inset: 0; overflow: hidden; }
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  text-align: start;
+  padding: var(--pad);
+  background: var(--bg);
+  overflow: hidden;
+}
+.slide.active { display: flex; }
+
+/* Inner content column keeps long lines readable on wide screens */
+.slide > * { max-width: 1180px; width: 100%; margin-inline: auto; }
+
+/* ---- Type scale ------------------------------------------------ */
+.t-hero { font-family: var(--serif); font-weight: 600; font-size: clamp(2.6rem, 6vw, 5rem);   line-height: 1.05; letter-spacing: -0.015em; color: var(--ink); }
+.t-xl   { font-family: var(--serif); font-weight: 600; font-size: clamp(2.1rem, 4.6vw, 3.6rem); line-height: 1.12; color: var(--ink); }
+.t-lg   { font-family: var(--serif); font-weight: 600; font-size: clamp(1.7rem, 3.4vw, 2.7rem); line-height: 1.18; color: var(--ink); }
+.t-md   { font-size: clamp(1.15rem, 1.9vw, 1.6rem);  line-height: 1.55; color: var(--ink-soft); font-weight: 400; }
+.t-sm   { font-size: clamp(0.95rem, 1.4vw, 1.2rem);  line-height: 1.5;  color: var(--ink-faint); font-weight: 400; }
+
+/* Small-caps kicker that sits above a heading */
+.kicker {
+  font-family: var(--sans);
+  font-size: clamp(0.85rem, 1.2vw, 1.05rem);
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 18px;
+}
+/* Arabic has no uppercase; drop the spacing tricks under RTL */
+[dir="rtl"] .kicker { letter-spacing: 0.04em; text-transform: none; }
+
+.accent { color: var(--accent); }
+
+/* Spacing helpers */
+.mt-sm { margin-top: 14px; }
+.mt-md { margin-top: 30px; }
+.mt-lg { margin-top: 52px; }
+
+/* ---- Bullets --------------------------------------------------- */
+.bullets { list-style: none; }
+.bullets li {
+  position: relative;
+  font-size: clamp(1.15rem, 2vw, 1.7rem);
+  line-height: 1.5;
+  color: var(--ink);
+  padding-block: 12px;
+  padding-inline-start: 40px;
+  border-bottom: 1px solid var(--rule);
+}
+.bullets li:last-child { border-bottom: none; }
+.bullets li::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 4px;
+  top: 1.35em;
+  width: 14px; height: 2px;
+  background: var(--accent);
+}
+.bullets li strong { font-weight: 600; }
+
+/* Numbered list variant */
+.steps { list-style: none; counter-reset: step; }
+.steps li {
+  position: relative;
+  counter-increment: step;
+  font-size: clamp(1.1rem, 1.9vw, 1.55rem);
+  line-height: 1.5;
+  color: var(--ink);
+  padding-block: 14px;
+  padding-inline-start: 64px;
+}
+.steps li::before {
+  content: counter(step);
+  position: absolute;
+  inset-inline-start: 0;
+  top: 10px;
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  font-family: var(--serif);
+  font-size: 1.3rem; font-weight: 600;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
+}
+
+/* ---- Two-column / metrics ------------------------------------- */
+.cols { display: flex; gap: clamp(28px, 4vw, 64px); align-items: flex-start; }
+.cols > * { flex: 1; margin-inline: 0; }
+
+.metric { }
+.metric .figure { font-family: var(--serif); font-weight: 600; font-size: clamp(3rem, 8vw, 6rem); line-height: 1; color: var(--accent); }
+.metric .label  { font-size: clamp(1rem, 1.5vw, 1.3rem); color: var(--ink-soft); margin-top: 10px; }
+
+/* ---- Slide variants -------------------------------------------- */
+.slide-title  { background: var(--bg); }
+.slide-title .t-hero { max-width: 16ch; }
+
+.slide-section {
+  background: var(--bg-tint);
+}
+.slide-section .index {
+  font-family: var(--serif);
+  font-size: clamp(2.4rem, 6vw, 4.4rem);
+  font-weight: 600;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.slide-statement {
+  background: var(--bg-ink);
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.slide-statement .t-xl,
+.slide-statement .t-hero { color: var(--on-ink); }
+.slide-statement .t-md { color: #C9BCAE; }
+.slide-statement .kicker { color: var(--accent-soft); }
+
+/* A thin rule used to separate a heading from body */
+.divider { width: 72px; height: 3px; background: var(--accent); border: none; margin-block: 22px; }
+[dir="rtl"] .divider { margin-inline-start: 0; }
+
+/* ---- Fragments (revealed one click at a time) ------------------ */
+.fragment { opacity: 0; transition: opacity .35s ease, transform .35s ease; transform: translateY(8px); }
+.fragment.visible { opacity: 1; transform: none; }
+
+/* ---- Chrome: progress, page number, hint ----------------------- */
+#progress {
+  position: fixed; inset-block-start: 0; inset-inline-start: 0;
+  height: 4px; width: 0;
+  background: var(--accent);
+  transition: width .3s ease;
+  z-index: 50;
+}
+#page-num {
+  position: fixed; inset-block-end: 22px; inset-inline-end: 28px;
+  font-family: var(--sans); font-size: 0.95rem; font-weight: 500;
+  color: var(--ink-faint);
+  z-index: 50;
+  letter-spacing: 0.05em;
+}
+.slide-statement ~ #page-num { color: #8a7d72; }
+
+/* Footer line (e.g. deck name) bottom-start corner */
+.deck-footer {
+  position: fixed; inset-block-end: 20px; inset-inline-start: 28px;
+  font-size: 0.9rem; color: var(--ink-faint);
+  z-index: 50;
+}
+
+/* Brand mark — a small logo lockup, top-left, on a faint chip so it reads on
+   light AND dark slides. Swap the <img src> (or remove it) to rebrand. */
+.deck-logo {
+  position: fixed; top: 18px; left: 24px; z-index: 45;
+  height: 46px; width: auto; display: block;
+  padding: 9px 15px; border-radius: 12px;
+  background: rgba(255,255,255,0.72);
+  box-shadow: 0 1px 6px rgba(5,5,5,0.08);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+
+/* Inline code / file names keep a monospace face and stay LTR */
+code, .mono {
+  font-family: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  direction: ltr;
+  unicode-bidi: isolate;
+  background: rgba(255,129,44,0.12);
+  color: var(--accent);
+  padding: 2px 7px;
+  border-radius: 5px;
+}
+
+/* Print to PDF: one slide per page (use the browser's "Save as PDF") */
+@media print {
+  @page { size: 1280px 720px; margin: 0; }
+  /* Print backgrounds/colors exactly as on screen — browsers drop fills
+     in PDF by default, which washes out the warm canvas and dark slides. */
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  html, body { background: #fff; }
+  #deck { position: static; }
+  #progress, #page-num, .deck-footer, .deck-logo { display: none; }
+  .slide { display: flex !important; position: relative; inset: auto;
+           width: 1280px; height: 720px; page-break-after: always; break-after: page; }
+  .fragment { opacity: 1 !important; transform: none !important; }
+}

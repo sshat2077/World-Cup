@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>من يرفع كأس العالم 2026؟ — توقّع مبنيّ على البيانات</title>
+
+<!-- Same fonts + shared theme as every deck. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
+<script src="live-config.js"></script>
+
+<!-- ============================================================
+     Deck-only styles. Two things, both scoped to THIS file:
+       1) A World Cup 2026 identity — dark canvas, trophy gold,
+          a Canada/Mexico/USA tri-colour accent. Overriding the
+          :root tokens here repaints only this deck; the shared
+          theme.css is untouched.
+       2) The "vote then reveal" prediction game.
+     ============================================================ -->
+<style>
+  /* —— 1 · World Cup 2026 palette (dark + gold) —— */
+  :root{
+    --bg:        #0C0C10;   /* near-black canvas              */
+    --bg-tint:   #16161D;   /* section dividers / panels      */
+    --bg-ink:    #060608;   /* full-bleed statement slides    */
+    --ink:       #F6F2E8;   /* light type on dark             */
+    --ink-soft:  #D3CCBE;
+    --ink-faint: #8C8578;
+    --on-ink:    #F6F2E8;
+    --accent:    #E3B53E;   /* trophy gold                    */
+    --accent-soft:#F4D784;
+    --rule:      #2A2A33;
+    /* host-nation tones */
+    --ca:#E4002B; --mx:#1A9F5A; --us:#4A86E8;
+  }
+  /* keep inline code legible against gold */
+  code, .mono{ background:rgba(227,181,62,.14); color:var(--accent); }
+
+  /* The corner emblem sits on a light chip so the black "26" reads on dark. */
+  .deck-logo{ height:54px; background:#FFFFFF; box-shadow:0 2px 10px rgba(0,0,0,.4); }
+
+  /* —— tri-colour identity rule (Canada · Mexico · USA) —— */
+  .tricolor{ display:flex; gap:6px; width:118px; margin-block:24px; }
+  [dir="rtl"] .tricolor{ margin-inline-start:0; }
+  .tricolor span{ height:6px; flex:1; border-radius:3px; }
+  .tricolor span:nth-child(1){ background:var(--ca); }
+  .tricolor span:nth-child(2){ background:var(--mx); }
+  .tricolor span:nth-child(3){ background:var(--us); }
+
+  /* —— horizontal probability bars (Opta layer) —— */
+  .bars-h{ display:flex; flex-direction:column; gap:11px; margin-top:22px; }
+  .bh-row{ display:grid; grid-template-columns:7.5em 1fr 3.4em; align-items:center; gap:14px; }
+  .bh-name{ font-size:clamp(.95rem,1.5vw,1.2rem); color:var(--ink); }
+  .bh-track{ height:24px; background:var(--bg-tint); border:1px solid var(--rule); border-radius:7px; overflow:hidden; }
+  .bh-fill{ height:100%; width:0; border-radius:7px;
+            background:linear-gradient(90deg,var(--accent),var(--accent-soft));
+            transition:width 1s cubic-bezier(.2,.8,.2,1); }
+  .bh-row.lead .bh-fill{ box-shadow:0 0 16px rgba(227,181,62,.55); }
+  .bh-val{ font-family:var(--serif); font-weight:600; color:var(--accent); font-size:1.05rem; }
+
+  /* —— the prediction game: vote, then reveal —— */
+  .slide[data-vote]{ padding-block:clamp(22px,3.4vh,52px); }
+  .slide[data-vote] > *{ max-width:1240px; }
+  .vote-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:13px; margin-top:18px; }
+  @media (max-width:900px){ .vote-grid{ grid-template-columns:repeat(2,1fr); } }
+  .vote-card{ position:relative; overflow:hidden; cursor:pointer; width:100%; text-align:start;
+              display:flex; align-items:center; gap:11px; font-family:var(--sans);
+              font-size:clamp(.95rem,1.5vw,1.18rem); color:var(--ink);
+              background:var(--bg-tint); border:1.5px solid var(--rule); border-radius:15px;
+              padding:14px 16px; transition:transform .12s ease, border-color .2s, background .2s; }
+  .vote-card:hover{ border-color:var(--accent); transform:translateY(-2px); }
+  .vote-card:active{ transform:translateY(0); }
+  .vote-flag{ font-size:1.55em; line-height:1; flex:none; }
+  .vote-name{ flex:1; font-weight:500; }
+  .vote-tally{ font-family:var(--serif); font-weight:600; font-size:1.25em;
+               color:var(--accent); min-width:1.3em; text-align:center; }
+  /* live "room support" underline — relative share of the votes cast */
+  .vote-fill{ position:absolute; inset-block-end:0; inset-inline-start:0; height:4px; width:0;
+              background:var(--us); transition:width .4s cubic-bezier(.2,.8,.2,1); }
+  /* revealed model badge */
+  .vote-model{ position:absolute; inset-block-start:8px; inset-inline-end:10px;
+               font-family:var(--serif); font-weight:600; font-size:.85em; color:var(--accent);
+               background:rgba(227,181,62,.14); border:1px solid rgba(227,181,62,.4);
+               border-radius:8px; padding:1px 8px; opacity:0; transform:translateY(-4px);
+               transition:opacity .3s ease, transform .3s ease; }
+  .vote-card.show-model .vote-model{ opacity:1; transform:none; }
+  .vote-card.is-pick{ border-color:var(--accent); background:rgba(227,181,62,.10);
+                      box-shadow:0 0 22px rgba(227,181,62,.35); }
+  .vote-card.is-pick .vote-name::after{ content:" 👑"; }
+
+  .vote-actions{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-top:24px; }
+  .vote-btn{ font-family:var(--sans); font-weight:600; font-size:clamp(.95rem,1.5vw,1.12rem);
+             color:#1A1206; background:var(--accent); border:none; border-radius:12px;
+             padding:12px 26px; cursor:pointer; transition:filter .2s, transform .08s; }
+  .vote-btn:hover{ filter:brightness(1.07); }
+  .vote-btn:active{ transform:translateY(1px); }
+  .vote-btn-ghost{ background:transparent; color:var(--ink-soft); border:1.5px solid var(--rule); }
+  .vote-legend{ display:inline-flex; align-items:center; gap:8px; color:var(--ink-faint);
+                font-size:.92rem; }
+  .vote-legend i{ width:12px; height:12px; border-radius:3px; display:inline-block; }
+  .vote-legend .lg-room{ background:var(--us); }
+  .vote-legend .lg-model{ background:var(--accent); }
+  .vote-verdict{ margin-top:18px; font-family:var(--serif); font-weight:600;
+                 font-size:clamp(1.05rem,1.9vw,1.5rem); color:var(--accent);
+                 min-height:1.4em; opacity:0; transform:translateY(6px);
+                 transition:opacity .35s ease, transform .35s ease; }
+  .vote-verdict.show{ opacity:1; transform:none; }
+
+  /* —— the data journey: a live signal mixer (betting · models · history) —— */
+  .slide[data-mixer]{ padding-block:clamp(22px,3.4vh,52px); }
+  .slide[data-mixer] > *{ max-width:1240px; }
+  .mixer{ display:flex; gap:clamp(24px,4vw,52px); align-items:center; margin-top:20px; }
+  @media (max-width:880px){ .mixer{ flex-direction:column; align-items:stretch; } }
+  .mixer-controls{ flex:0 0 40%; min-width:0; }
+  .mixer-controls label{ display:flex; justify-content:space-between; align-items:baseline;
+    font-size:clamp(.92rem,1.4vw,1.12rem); color:var(--ink-soft); margin-bottom:6px; }
+  .mixer-controls label strong{ color:var(--accent); font-family:var(--serif); font-size:1.14em; }
+  .mixer-controls input[type=range]{ width:100%; accent-color:var(--accent); height:26px;
+    cursor:ew-resize; margin-bottom:16px; }
+  .mixer-lead{ margin-top:6px; padding-top:14px; border-top:1px solid var(--rule); }
+  .lead-pick{ font-family:var(--serif); font-weight:600; font-size:clamp(1.15rem,2.1vw,1.6rem);
+    color:var(--accent); line-height:1.3; }
+  .lead-note{ font-size:clamp(.88rem,1.3vw,1.05rem); color:var(--ink-soft); margin-top:8px; min-height:3em; }
+  .mixer-bars{ flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:9px; }
+  .mx-row{ display:grid; grid-template-columns:7.5em 1fr 3.4em; align-items:center; gap:12px; }
+  .mx-name{ font-size:clamp(.9rem,1.3vw,1.08rem); color:var(--ink); }
+  .mx-track{ height:22px; background:var(--bg-tint); border:1px solid var(--rule);
+    border-radius:7px; overflow:hidden; }
+  .mx-fill{ height:100%; width:0; border-radius:7px;
+    background:linear-gradient(90deg,var(--us),#8FB4FF); transition:width .35s cubic-bezier(.2,.8,.2,1); }
+  .mx-row.lead .mx-fill{ background:linear-gradient(90deg,var(--accent),var(--accent-soft));
+    box-shadow:0 0 14px rgba(227,181,62,.5); }
+  .mx-val{ font-family:var(--serif); font-weight:600; color:var(--ink-soft); font-size:1rem; }
+  .mx-row.lead .mx-val{ color:var(--accent); }
+
+  /* —— interactive 3D globe: contenders & their title odds —— */
+  .slide[data-globe-slide]{ padding-block:clamp(20px,3vh,46px); }
+  .slide[data-globe-slide] > *{ max-width:1240px; }
+  .globe-stage{ display:flex; gap:clamp(20px,3vw,44px); align-items:center; margin-top:14px; }
+  @media (max-width:880px){ .globe-stage{ flex-direction:column; } }
+  .globe-holder{ position:relative; flex:1 1 0; min-width:0;
+    height:clamp(300px,48vh,520px); border-radius:18px; overflow:hidden; border:1px solid #1d1f2b;
+    background:radial-gradient(circle at 50% 40%, #11131c 0%, #06070c 74%);
+    box-shadow:0 18px 50px rgba(0,0,0,.5); }
+  .globe-holder canvas{ display:block; }
+  .globe-loading{ position:absolute; inset:0; display:grid; place-items:center; z-index:2;
+    color:rgba(246,242,232,.6); font-size:.95rem; }
+  .globe-holder.ready .globe-loading{ display:none; }
+  .globe-hint{ position:absolute; inset-inline-start:14px; inset-block-end:12px; z-index:3;
+    font-size:.8rem; color:rgba(246,242,232,.55); pointer-events:none; }
+  .g-flag{ transform:translate(-50%,-50%); text-align:center; pointer-events:auto; cursor:pointer;
+    transition:transform .2s ease; }
+  .g-flag .gf-emoji{ display:block; font-size:26px; line-height:1;
+    filter:drop-shadow(0 0 calc(5px + 12px*var(--glow,.3)) rgba(227,181,62,calc(.35 + .55*var(--glow,.3)))); }
+  .g-flag .gf-pct{ display:block; font-family:var(--serif); font-weight:600; font-size:12px;
+    color:var(--accent); margin-top:-1px; text-shadow:0 1px 4px #000; }
+  .g-flag.hot{ transform:translate(-50%,-50%) scale(1.32); z-index:6; }
+  .globe-info{ flex:0 0 234px; text-align:center; padding:24px 18px;
+    background:var(--bg-tint); border:1px solid var(--rule); border-radius:18px; }
+  .globe-info .gi-flag{ font-size:3rem; line-height:1; }
+  .globe-info .gi-name{ font-family:var(--serif); font-weight:600; font-size:1.4rem; color:var(--ink); margin-top:8px; }
+  .globe-info .gi-pct{ font-family:var(--serif); font-weight:600; font-size:2.5rem; color:var(--accent); margin-top:6px; min-height:1.2em; }
+  .globe-info .gi-sub{ font-size:.86rem; color:var(--ink-faint); margin-top:8px; line-height:1.55; }
+  .globe-legend{ display:flex; flex-wrap:wrap; gap:7px; margin-top:14px; justify-content:center; }
+  .gl-chip{ display:inline-flex; align-items:center; gap:5px; font-size:.86rem; color:var(--ink-soft);
+    background:var(--bg-tint); border:1px solid var(--rule); border-radius:999px; padding:4px 11px; cursor:default; }
+  .gl-chip b{ color:var(--accent); font-family:var(--serif); font-weight:600; }
+  .gl-chip:hover{ border-color:var(--accent); }
+  .gl-chip.host{ color:var(--ink-faint); }
+
+  /* —— intuition game: predicted vs reality, with misleading nudges —— */
+  .slide[data-gut]{ padding-block:clamp(18px,2.6vh,42px); }
+  .slide[data-gut] > *{ max-width:1060px; }
+  .gut-hud{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-top:12px; font-size:.95rem; color:var(--ink-soft); }
+  .gut-hud b{ color:var(--accent); font-family:var(--serif); font-size:1.15em; }
+  .gut-hud .gh-prog{ margin-inline-start:auto; color:var(--ink-faint); }
+  .gut-card{ margin-top:14px; background:var(--bg-tint); border:1px solid var(--rule); border-radius:20px;
+    padding:clamp(16px,2.4vw,28px); position:relative; }
+  .gut-match{ display:flex; align-items:center; justify-content:center; gap:16px;
+    font-family:var(--serif); font-weight:600; font-size:clamp(1.15rem,2.3vw,1.8rem); color:var(--ink); }
+  .gm-side{ display:inline-flex; align-items:center; gap:8px; }
+  .gm-flag{ font-size:1.5em; line-height:1; }
+  .gm-vs{ color:var(--ink-faint); font-size:.65em; font-family:var(--sans); }
+  .gut-fav{ text-align:center; color:var(--ink-faint); font-size:.95rem; margin-top:8px; }
+  .gut-dial{ margin-top:22px; position:relative; padding-bottom:30px; }
+  .gd-zones{ display:flex; justify-content:space-between; font-size:.85rem; color:var(--ink-soft); margin-bottom:6px; }
+  .gd-zones span:first-child{ color:#E0726A; } .gd-zones span:last-child{ color:#6FCF97; }
+  .gut-dial input[type=range]{ width:100%; accent-color:var(--accent); height:30px; cursor:ew-resize; }
+  .gd-real{ position:absolute; top:54px; inset-inline-start:50%; width:2px; height:26px; background:var(--accent);
+    opacity:0; transform:translateX(-50%); transition:inset-inline-start .8s cubic-bezier(.2,.8,.2,1), opacity .3s; }
+  .gd-real.show{ opacity:1; }
+  .gd-real::after{ content:'الواقع'; position:absolute; bottom:-18px; inset-inline-start:50%; transform:translateX(-50%);
+    font-size:.72rem; color:var(--accent); white-space:nowrap; }
+  .gut-nudge{ margin-top:14px; display:flex; flex-direction:column; gap:8px; }
+  .gn-msg{ background:rgba(224,114,106,.12); border:1px solid rgba(224,114,106,.4); border-radius:12px;
+    padding:9px 14px; font-size:clamp(.9rem,1.4vw,1.08rem); color:var(--ink); animation:gn-in .35s ease both; }
+  @keyframes gn-in{ from{opacity:0;transform:translateY(-6px);} to{opacity:1;transform:none;} }
+  .gn-timer{ font-family:var(--serif); color:var(--accent); font-weight:600; }
+  .gut-actions{ margin-top:16px; display:flex; gap:12px; flex-wrap:wrap; }
+  .gut-btn{ font-family:var(--sans); font-weight:600; font-size:clamp(.95rem,1.5vw,1.12rem); color:#1A1206;
+    background:var(--accent); border:none; border-radius:12px; padding:11px 24px; cursor:pointer;
+    transition:filter .2s, transform .08s; }
+  .gut-btn:hover{ filter:brightness(1.07); } .gut-btn:active{ transform:translateY(1px); }
+  .gut-btn.ghost{ background:transparent; color:var(--ink-soft); border:1.5px solid var(--rule); }
+  .gut-reveal{ margin-top:14px; opacity:0; max-height:0; overflow:hidden; transition:opacity .3s ease; }
+  .gut-reveal.show{ opacity:1; max-height:460px; }
+  .gr-result{ font-family:var(--serif); font-weight:600; font-size:clamp(1.05rem,2vw,1.45rem); color:var(--ink); }
+  .gr-feed{ font-size:clamp(.92rem,1.45vw,1.12rem); color:var(--ink-soft); margin-top:6px; }
+  .gr-shock{ margin-top:12px; }
+  .grs-track{ height:14px; background:var(--bg); border:1px solid var(--rule); border-radius:8px; overflow:hidden; }
+  .grs-fill{ height:100%; width:0; background:linear-gradient(90deg,#E0726A,var(--accent)); transition:width .9s ease; }
+  .grs-lbl{ font-size:.85rem; color:var(--ink-faint); margin-top:5px; }
+  .gut-final{ text-align:center; }
+  .gf-title{ font-family:var(--serif); font-weight:600; font-size:clamp(1.5rem,3vw,2.4rem); color:var(--accent); }
+  .gf-scores{ display:flex; justify-content:center; gap:clamp(22px,5vw,58px); margin-top:18px; }
+  .gf-key{ font-size:clamp(.98rem,1.6vw,1.2rem); color:var(--ink); margin-top:16px; line-height:1.6; }
+  .gf-key b{ color:var(--accent); }
+
+  /* —— live boards embedded from the Firebase pages —— */
+  .slide[data-live-board]{ padding-block:clamp(16px,2.4vh,40px); }
+  .slide[data-live-board] > *{ max-width:1180px; }
+  .join{ display:flex; align-items:center; gap:18px; margin-top:10px; flex-wrap:wrap; }
+  .join-line{ color:var(--ink-soft); font-size:clamp(.95rem,1.6vw,1.18rem); }
+  .join-line .link{ color:var(--accent); }
+  .join-qr{ width:96px; height:96px; border-radius:10px; background:#fff; padding:5px; display:none; flex:none; }
+  .live-frame{ width:100%; height:clamp(300px,50vh,540px); border:1px solid var(--rule);
+    border-radius:16px; background:var(--bg-tint); margin-top:12px; display:block; }
+
+  /* —— big join QR slide —— */
+  .slide[data-bigqr-slide] .bigqr{ display:flex; align-items:center; gap:clamp(24px,5vw,64px);
+    margin-top:26px; flex-wrap:wrap; justify-content:center; }
+  .bigqr-img{ width:clamp(220px,34vw,380px); height:auto; aspect-ratio:1; background:#fff;
+    border-radius:18px; padding:14px; box-shadow:0 18px 50px rgba(0,0,0,.45); }
+  .bigqr-side{ flex:1 1 280px; min-width:240px; }
+  .bigqr-url{ font-family:var(--serif); font-weight:600; font-size:clamp(1.2rem,2.6vw,2rem);
+    margin-top:6px; word-break:break-all; }
+
+  /* —— live betting-odds board —— */
+  .slide[data-odds]{ padding-block:clamp(16px,2.4vh,40px); }
+  .slide[data-odds] > *{ max-width:1240px; }
+  .odds-top{ display:flex; align-items:center; gap:14px; margin-top:6px; flex-wrap:wrap; }
+  .odds-live{ font-size:.82rem; font-weight:600; color:#6FCF97; background:rgba(111,207,151,.16);
+    border-radius:999px; padding:3px 12px; display:inline-flex; align-items:center; gap:6px; }
+  .odds-live .dot{ width:8px; height:8px; border-radius:50%; background:#6FCF97; animation:odds-pulse 1.4s ease-in-out infinite; }
+  @keyframes odds-pulse{ 0%,100%{opacity:1; transform:scale(1);} 50%{opacity:.35; transform:scale(.65);} }
+  .odds-updated{ margin-inline-start:auto; color:var(--ink-faint); font-size:.9rem; }
+  .odds-table{ margin-top:16px; border:1px solid var(--rule); border-radius:16px; overflow:hidden; }
+  .odds-head, .odds-row{ display:grid; grid-template-columns:1.8fr repeat(3,1fr); align-items:center; }
+  .odds-head{ background:var(--bg-tint); color:var(--ink-soft); font-weight:600; font-size:clamp(.82rem,1.4vw,1.02rem); }
+  .odds-head > div, .odds-row > div{ padding:clamp(9px,1.5vh,15px) 14px; }
+  .odds-row{ border-top:1px solid var(--rule); }
+  .odds-row.lead{ background:rgba(227,181,62,.06); }
+  .odds-row .team{ display:flex; flex-direction:column; gap:7px; }
+  .team-line{ display:flex; align-items:center; gap:10px; font-size:clamp(.98rem,1.7vw,1.28rem); }
+  .team-line .fl{ font-size:1.4em; line-height:1; }
+  .team-imp{ display:flex; align-items:center; gap:9px; }
+  .team-imp .bar{ flex:1; height:6px; background:var(--bg-tint); border:1px solid var(--rule); border-radius:4px; overflow:hidden; }
+  .team-imp .fill{ height:100%; width:0; background:linear-gradient(90deg,var(--accent),var(--accent-soft)); border-radius:4px; transition:width .9s cubic-bezier(.2,.8,.2,1); }
+  .team-imp .pct{ font-family:var(--serif); font-weight:600; color:var(--accent); font-size:.86em; min-width:3.2em; }
+  .odds-row .cell{ text-align:center; font-weight:600; font-size:clamp(1rem,1.8vw,1.32rem); color:var(--ink); }
+  .cell .ar{ font-size:.66em; margin-inline-start:5px; }
+  .cell .up{ color:#6FCF97; } .cell .down{ color:#E0726A; }
+  .cell.flash{ animation:odds-flash 1s ease; }
+  @keyframes odds-flash{ 0%{ background:rgba(227,181,62,.30);} 100%{ background:transparent;} }
+  .odds-msg{ text-align:center; color:var(--ink-soft); padding:38px 20px; line-height:1.9; }
+  .odds-msg b{ color:var(--accent); }
+  .odds-note{ color:var(--ink-faint); font-size:clamp(.82rem,1.3vw,.98rem); margin-top:10px; }
+  .oddsvid{ position:relative; margin-top:14px; border:1px solid var(--rule); border-radius:16px;
+    overflow:hidden; background:#000; height:clamp(320px,58vh,620px); box-shadow:0 18px 50px rgba(0,0,0,.45); }
+  .oddsvid-el{ width:100%; height:100%; object-fit:contain; display:block; background:#000; }
+  .oddsvid-fallback{ position:absolute; inset:0; display:grid; place-items:center; text-align:center;
+    color:var(--ink-soft); padding:30px; line-height:1.9; background:var(--bg-tint); }
+  .oddsvid-fallback b{ color:var(--accent); }
+  .oddsvid.playing .oddsvid-fallback{ display:none; }
+  /* broadcast-style price board (3 columns: team · price · implied) */
+  .slide[data-odds] .odds-head, .slide[data-odds] .odds-row{ grid-template-columns:1.6fr 1fr 1.5fr; }
+  .odds-row .imp{ display:flex; align-items:center; gap:9px; }
+  .odds-row .imp .bar{ flex:1; height:8px; background:var(--bg-tint); border:1px solid var(--rule); border-radius:5px; overflow:hidden; }
+  .odds-row .imp .fill{ height:100%; width:0; background:linear-gradient(90deg,var(--accent),var(--accent-soft));
+    border-radius:5px; transition:width .6s cubic-bezier(.2,.8,.2,1); }
+  .odds-row .imp .pct{ font-family:var(--serif); font-weight:600; color:var(--accent); font-size:.9em; min-width:3.4em; }
+  .odds-ticker{ margin-top:14px; overflow:hidden; border:1px solid var(--rule); border-radius:12px; background:var(--bg-tint); padding:9px 0; }
+  .odds-ticker-track{ display:inline-block; white-space:nowrap; will-change:transform; animation:odds-marquee 30s linear infinite; }
+  [dir="rtl"] .odds-ticker-track{ animation-direction:reverse; }
+  @keyframes odds-marquee{ from{ transform:translateX(0);} to{ transform:translateX(-50%);} }
+  .odds-ticker-item{ display:inline-flex; align-items:center; gap:7px; margin:0 22px;
+    font-size:clamp(.9rem,1.5vw,1.15rem); color:var(--ink-soft); }
+  .odds-ticker-item b{ color:var(--accent); font-family:var(--serif); }
+</style>
+</head>
+<body>
+
+<!-- Official FIFA World Cup 2026 emblem, shown in the corner of every slide. -->
+<img class="deck-logo" src="assets/wc2026-logo.png" alt="كأس العالم 2026">
+
+<div id="deck">
+
+  <!-- 1 · الغلاف -->
+  <section class="slide slide-title" dir="rtl">
+    <p class="kicker">كأس العالم 2026 · توقّعات</p>
+    <h1 class="t-hero">مَن يرفع الكأس؟</h1>
+    <div class="tricolor"><span></span><span></span><span></span></div>
+    <p class="t-md">لا نسأل عن حدسٍ عابر، بل نبني توقّعًا سليمًا من البيانات
+      المفتوحة والمنشورة والتاريخ — ونتعلّم الطريقة معًا.</p>
+    <p class="t-sm mt-md">اضغط <span class="accent">→</span> للبدء.</p>
+  </section>
+
+  <!-- 2 · المخاطرة (الخطاف) -->
+  <section class="slide slide-statement" dir="rtl">
+    <p class="kicker">قبل أن نبدأ</p>
+    <p class="t-xl">لكلٍّ منّا حدسٌ عن البطل.<br>لكن التوقّع الجيّد <span class="accent">يُبنى</span> — لا يُخمَّن.</p>
+    <p class="t-md mt-md">السؤال ليس «بمن تشعر؟»، بل «ما الذي تقوله الأدلّة حين نجمعها؟»</p>
+  </section>
+
+  <!-- 3 · رحلة البيانات: امزج الإشارات الثلاث -->
+  <section class="slide" dir="rtl" data-mixer>
+    <p class="kicker">رحلة البيانات · امزج الإشارات</p>
+    <h2 class="t-lg">حرّك المؤشّرات… فيتغيّر المتصدّر</h2>
+    <div class="mixer">
+      <div class="mixer-controls">
+        <label>المراهنات (السوق) <strong data-w="bet">—</strong></label>
+        <input type="range" min="0" max="100" value="50" data-slider="bet" aria-label="وزن المراهنات">
+        <label>توقّعات المختصين (النماذج) <strong data-w="mod">—</strong></label>
+        <input type="range" min="0" max="100" value="60" data-slider="mod" aria-label="وزن النماذج">
+        <label>الواقع التاريخي (الألقاب) <strong data-w="his">—</strong></label>
+        <input type="range" min="0" max="100" value="30" data-slider="his" aria-label="وزن التاريخ">
+        <div class="mixer-lead">
+          <div class="lead-pick" data-lead>—</div>
+          <div class="lead-note" data-note></div>
+        </div>
+      </div>
+      <div class="mixer-bars" data-mixbars>
+        <div class="mx-row" data-c="es"><span class="mx-name">🇪🇸 إسبانيا</span><div class="mx-track"><div class="mx-fill"></div></div><span class="mx-val">—</span></div>
+        <div class="mx-row" data-c="fr"><span class="mx-name">🇫🇷 فرنسا</span><div class="mx-track"><div class="mx-fill"></div></div><span class="mx-val">—</span></div>
+        <div class="mx-row" data-c="en"><span class="mx-name">🏴󠁧󠁢󠁥󠁮󠁧󠁿 إنجلترا</span><div class="mx-track"><div class="mx-fill"></div></div><span class="mx-val">—</span></div>
+        <div class="mx-row" data-c="ar"><span class="mx-name">🇦🇷 الأرجنتين</span><div class="mx-track"><div class="mx-fill"></div></div><span class="mx-val">—</span></div>
+        <div class="mx-row" data-c="pt"><span class="mx-name">🇵🇹 البرتغال</span><div class="mx-track"><div class="mx-fill"></div></div><span class="mx-val">—</span></div>
+        <div class="mx-row" data-c="br"><span class="mx-name">🇧🇷 البرازيل</span><div class="mx-track"><div class="mx-fill"></div></div><span class="mx-val">—</span></div>
+        <div class="mx-row" data-c="de"><span class="mx-name">🇩🇪 ألمانيا</span><div class="mx-track"><div class="mx-fill"></div></div><span class="mx-val">—</span></div>
+        <div class="mx-row" data-c="nl"><span class="mx-name">🇳🇱 هولندا</span><div class="mx-track"><div class="mx-fill"></div></div><span class="mx-val">—</span></div>
+      </div>
+    </div>
+    <p class="t-sm mt-md">السوق والنماذج يرجّحان <strong class="accent">إسبانيا</strong>؛ أمّا «الواقع التاريخي» (عدد الألقاب)
+      فيرفع <strong>البرازيل</strong> وألمانيا. أَعْلِ كفّة التاريخ… وانظر كيف ينقلب المتصدّر — هكذا تتطابق الإشارات أو تختلف.
+      المصادر: Opta · Oddspedia · سجلّ الألقاب.</p>
+  </section>
+
+  <!-- 4 · اللعبة: صوّتوا ثم اكشفوا -->
+  <section class="slide" dir="rtl" data-vote>
+    <p class="kicker">شاركوا — التزموا بتوقّعكم أولًا</p>
+    <h2 class="t-lg">صوّتوا: من يرفع الكأس؟ 🏆</h2>
+    <p class="t-sm mt-sm">لينقر كلٌّ منكم بطله. الشريط الأزرق أسفل كل بطاقة يُظهر تأييد الغرفة لحظيًّا.
+      ثم اضغطوا <strong class="accent">اكشف التحليل</strong> لتقارنوا حدسكم بأرقام النموذج.</p>
+
+    <div class="vote-grid">
+      <button class="vote-card" type="button" data-k="es" data-pct="16.1"><span class="vote-flag">🇪🇸</span><span class="vote-name">إسبانيا</span><span class="vote-tally">0</span><span class="vote-model">16.1%</span><span class="vote-fill"></span></button>
+      <button class="vote-card" type="button" data-k="fr" data-pct="13.0"><span class="vote-flag">🇫🇷</span><span class="vote-name">فرنسا</span><span class="vote-tally">0</span><span class="vote-model">13.0%</span><span class="vote-fill"></span></button>
+      <button class="vote-card" type="button" data-k="en" data-pct="11.2"><span class="vote-flag">🏴󠁧󠁢󠁥󠁮󠁧󠁿</span><span class="vote-name">إنجلترا</span><span class="vote-tally">0</span><span class="vote-model">11.2%</span><span class="vote-fill"></span></button>
+      <button class="vote-card" type="button" data-k="ar" data-pct="10.4"><span class="vote-flag">🇦🇷</span><span class="vote-name">الأرجنتين</span><span class="vote-tally">0</span><span class="vote-model">10.4%</span><span class="vote-fill"></span></button>
+      <button class="vote-card" type="button" data-k="pt" data-pct="7.0"><span class="vote-flag">🇵🇹</span><span class="vote-name">البرتغال</span><span class="vote-tally">0</span><span class="vote-model">7.0%</span><span class="vote-fill"></span></button>
+      <button class="vote-card" type="button" data-k="br" data-pct="6.6"><span class="vote-flag">🇧🇷</span><span class="vote-name">البرازيل</span><span class="vote-tally">0</span><span class="vote-model">6.6%</span><span class="vote-fill"></span></button>
+      <button class="vote-card" type="button" data-k="de" data-pct="5.1"><span class="vote-flag">🇩🇪</span><span class="vote-name">ألمانيا</span><span class="vote-tally">0</span><span class="vote-model">5.1%</span><span class="vote-fill"></span></button>
+      <button class="vote-card" type="button" data-k="nl" data-pct="3.6"><span class="vote-flag">🇳🇱</span><span class="vote-name">هولندا</span><span class="vote-tally">0</span><span class="vote-model">3.6%</span><span class="vote-fill"></span></button>
+    </div>
+
+    <div class="vote-actions">
+      <button class="vote-btn" type="button" data-reveal>اكشف التحليل 🔮</button>
+      <button class="vote-btn vote-btn-ghost" type="button" data-reset>إعادة التصويت</button>
+      <span class="vote-legend"><i class="lg-room"></i> تأييد الغرفة &nbsp;·&nbsp; <i class="lg-model"></i> احتمال نموذج Opta</span>
+    </div>
+    <p class="vote-verdict" data-verdict></p>
+  </section>
+
+  <!-- انضمّوا · رمز QR كبير -->
+  <section class="slide" dir="rtl" data-bigqr-slide>
+    <p class="kicker">انضمّوا الآن</p>
+    <h2 class="t-lg">امسحوا الرمز والعبوا من جوّالكم 📲</h2>
+    <div class="bigqr">
+      <img class="bigqr-img" data-bigqr alt="رمز الانضمام">
+      <div class="bigqr-side">
+        <p class="t-md">افتحوا كاميرا الجوّال وامسحوا الرمز، أو زوروا:</p>
+        <p class="bigqr-url"><span class="accent" data-bigqr-url>world-cup-games.onrender.com</span></p>
+        <p class="t-sm mt-sm">توقّعوا البطل، والعبوا «اختبار الحدس» — وتظهر نتائجكم على الشاشة مباشرةً.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- لوحة التوقّعات الحيّة (Firebase) -->
+  <section class="slide" dir="rtl" data-live-board>
+    <p class="kicker">مشاركة حيّة · توقّعات الفريق</p>
+    <h2 class="t-lg">صوّتوا من جوّالكم… وشاهدوها هنا 📲</h2>
+    <div class="join" data-join="predict.html">
+      <p class="join-line">افتحوا على جوّالكم: <span class="link">انشروا الصفحة وضعوا رابطها في live-config.js</span></p>
+      <img class="join-qr" alt="رمز الانضمام للتوقّع">
+    </div>
+    <iframe class="live-frame" src="poll-results.html" title="نتائج التوقّعات الحيّة" loading="lazy"></iframe>
+  </section>
+
+  <!-- فاصل · المنهج -->
+  <section class="slide slide-section" dir="rtl">
+    <p class="index">٠١</p>
+    <h2 class="t-xl mt-sm">كيف نتوقّع؟</h2>
+    <p class="t-md mt-sm">ثلاث طبقاتٍ مستقلّة من الأدلّة: التاريخ، ثم النماذج، ثم سوق المراهنات.
+      حين تتّفق، نثق؛ وحين تختلف، نتساءل.</p>
+  </section>
+
+  <!-- الطبقة ١ · التاريخ -->
+  <section class="slide" dir="rtl">
+    <p class="kicker">الطبقة ١ · القاعدة التاريخية</p>
+    <h2 class="t-lg">ابدأ من السجلّ: البطولة نادٍ مغلق</h2>
+    <div class="cols mt-lg">
+      <div class="metric"><div class="figure">8</div><div class="label">دول فقط رفعت الكأس في ٢٢ نسخة</div></div>
+      <div class="metric"><div class="figure">35.9%</div><div class="label">فقط من محاكاة Opta رأت بطلًا جديدًا لأوّل مرّة</div></div>
+    </div>
+    <ul class="bullets mt-md">
+      <li>البرازيل <strong>٥</strong> ألقاب · ألمانيا وإيطاليا <strong>٤</strong> لكلٍّ · الأرجنتين <strong>٣</strong></li>
+      <li>أوروغواي وفرنسا <strong>٢</strong> لكلٍّ · إنجلترا وإسبانيا <strong>١</strong> لكلٍّ</li>
+      <li><strong>الدرس:</strong> الاحتمال الأكبر دائمًا أن يأتي البطل من هذه الدائرة الضيّقة — فابدأ منها.</li>
+    </ul>
+    <p class="t-sm mt-md">المصدر: سجلّ كأس العالم (1930–2022) · محاكاة Opta Supercomputer.</p>
+  </section>
+
+  <!-- الطبقة ٢ · النماذج -->
+  <section class="slide" dir="rtl">
+    <p class="kicker">الطبقة ٢ · النماذج الحسابية</p>
+    <h2 class="t-lg">سوبر كمبيوتر Opta — ٢٥٬٠٠٠ محاكاة</h2>
+    <div class="bars-h" data-bars-h>
+      <div class="bh-row lead"><span class="bh-name">🇪🇸 إسبانيا</span><div class="bh-track"><div class="bh-fill" data-pct="16.1"></div></div><span class="bh-val">16.1%</span></div>
+      <div class="bh-row"><span class="bh-name">🇫🇷 فرنسا</span><div class="bh-track"><div class="bh-fill" data-pct="13.0"></div></div><span class="bh-val">13.0%</span></div>
+      <div class="bh-row"><span class="bh-name">🏴󠁧󠁢󠁥󠁮󠁧󠁿 إنجلترا</span><div class="bh-track"><div class="bh-fill" data-pct="11.2"></div></div><span class="bh-val">11.2%</span></div>
+      <div class="bh-row"><span class="bh-name">🇦🇷 الأرجنتين</span><div class="bh-track"><div class="bh-fill" data-pct="10.4"></div></div><span class="bh-val">10.4%</span></div>
+      <div class="bh-row"><span class="bh-name">🇵🇹 البرتغال</span><div class="bh-track"><div class="bh-fill" data-pct="7.0"></div></div><span class="bh-val">7.0%</span></div>
+      <div class="bh-row"><span class="bh-name">🇧🇷 البرازيل</span><div class="bh-track"><div class="bh-fill" data-pct="6.6"></div></div><span class="bh-val">6.6%</span></div>
+    </div>
+    <p class="t-sm mt-md">النموذج يرجّح <strong class="accent">إسبانيا</strong> أوّلًا — بفارقٍ واضح عن البقية.
+      المصدر: The Analyst (Opta Supercomputer)، قبل انطلاق البطولة.</p>
+  </section>
+
+  <!-- الطبقة ٣ · السوق -->
+  <section class="slide" dir="rtl">
+    <p class="kicker">الطبقة ٣ · سوق المراهنات</p>
+    <h2 class="t-lg">حكمة الجمهور… حين يدفع ثمنها</h2>
+    <ul class="bullets mt-md">
+      <li class="fragment">🇪🇸 <strong>إسبانيا</strong> هي المرشّح الأوّل — بأفضل سعرٍ في السوق <span dir="ltr" class="accent">9/2</span>.</li>
+      <li class="fragment">🏴󠁧󠁢󠁥󠁮󠁧󠁿 إنجلترا <span dir="ltr">13/2</span> · 🇦🇷 الأرجنتين <span dir="ltr">8/1</span> — ومعهم فرنسا والبرازيل في الصدارة.</li>
+      <li class="fragment"><strong>السوق يتنفّس مع الأحداث:</strong> بعد خسارة فرنسا الودّية <span dir="ltr">2–1</span> أمام ساحل العاج،
+        تراجعت أسعارها وتقدّمت إسبانيا إلى الصدارة.</li>
+      <li class="fragment"><strong>الدرس:</strong> السوق ليس نبوءة — بل إجماعٌ مُسعَّر يتحدّث باستمرار. اقرأ اتجاهه، لا لحظته.</li>
+    </ul>
+    <p class="t-sm mt-md">المصدر: أسعار المراهنات المنشورة (Oddspedia · Squawka)، يونيو 2026.</p>
+  </section>
+
+  <!-- لوحة أسعار السوق — أسلوب بثّ (مؤثّرات أصلية، تتحرّك وتتكرّر) -->
+  <section class="slide" dir="rtl" data-odds>
+    <p class="kicker">سوق المراهنات · أسلوب بثّ</p>
+    <div class="odds-top">
+      <h2 class="t-lg">لوحة أسعار البطل 📊</h2>
+      <span class="odds-live"><span class="dot"></span> السوق ينبض</span>
+    </div>
+    <div class="odds-table" data-odds-table></div>
+    <div class="odds-ticker"><div class="odds-ticker-track" data-odds-ticker></div></div>
+    <p class="odds-note">الأرقام أسعارٌ منشورة (يونيو 2026)، والحركة توضيحية تحاكي تقلّب السوق — لا تغذية لحظية.</p>
+  </section>
+
+  <!-- خريطة الاحتمالات · الكرة الأرضية التفاعلية -->
+  <section class="slide" dir="rtl" data-globe-slide>
+    <p class="kicker">خريطة الاحتمالات</p>
+    <h2 class="t-lg">من أين يأتون… وكلّهم نحو النهائي 🌍</h2>
+    <div class="globe-stage">
+      <div class="globe-holder" data-globe>
+        <div class="globe-loading">…يبدأ المشهد، لحظة</div>
+        <div class="globe-hint">أدر الكرة · مرّر فوق منتخبٍ أو شارته لتفصيله</div>
+      </div>
+      <div class="globe-info" data-globe-info>
+        <div class="gi-flag">🏆</div>
+        <div class="gi-name">النهائي · نيويورك/نيوجيرسي</div>
+        <div class="gi-pct">19 يوليو</div>
+        <div class="gi-sub">كل الخطوط تتّجه إلى ملعب النهائي</div>
+      </div>
+    </div>
+    <div class="globe-legend" data-globe-legend></div>
+    <p class="t-sm mt-sm">ارتفاع كل عمود ونسبته بقدر احتمال التتويج الضمنيّ من أسعار السوق؛ والخطوط مسارٌ رمزيّ نحو
+      مدينة النهائي؛ والحلقات النابضة تُبرز الدول المضيفة الثلاث 🔵 أمريكا · 🔴 كندا · 🟢 المكسيك.
+      المصدر: أسعار السوق المنشورة، 12 يونيو 2026.</p>
+  </section>
+
+  <!-- الانعطافة · التقاطع -->
+  <section class="slide slide-statement" dir="rtl">
+    <p class="kicker">الانعطافة</p>
+    <p class="t-xl">ثلاث عدساتٍ مستقلّة —<br>وكلّها تتوقّف عند <span class="accent">إسبانيا</span>.</p>
+    <p class="t-md mt-md">التاريخ يرشّحها، والنموذج يصدّرها، والسوق يسعّرها أولًا.
+      التوقّع السليم ليس رأي مصدرٍ واحد — بل حين تتّفق مصادر لا تعرف بعضها.</p>
+  </section>
+
+  <!-- التواضع أمام عدم اليقين -->
+  <section class="slide" dir="rtl">
+    <p class="kicker">لكن… التزم التواضع</p>
+    <h2 class="t-lg">«الأوفر حظًّا» لا تعني «المؤكَّد»</h2>
+    <div class="cols mt-lg">
+      <div class="metric"><div class="figure">16.1%</div><div class="label">أعلى احتمالٍ لأيّ منتخب (إسبانيا)</div></div>
+      <div class="metric"><div class="figure">~84%</div><div class="label">احتمال ألّا تفوز إسبانيا</div></div>
+    </div>
+    <p class="t-md mt-md">بطولةٌ مفتوحة، لا مرشّح كاسح. التوقّع المحترف يذكر <strong>ثقته</strong> بصراحة،
+      ولا يبيع اليقين حيث لا يقين.</p>
+  </section>
+
+  <!-- منهجنا القابل لإعادة الاستخدام -->
+  <section class="slide" dir="rtl">
+    <p class="kicker">خلاصة لفريقنا</p>
+    <h2 class="t-lg">منهجٌ نعيد استخدامه في أي توقّع</h2>
+    <ol class="steps mt-md">
+      <li class="fragment"><strong>ابدأ من القاعدة التاريخية</strong> — ما الذي يحدث عادةً؟</li>
+      <li class="fragment"><strong>أضِف نموذجًا</strong> يحوّل البيانات إلى احتمالات لا إلى آراء.</li>
+      <li class="fragment"><strong>اقرأ إجماع السوق</strong> — وتتبّع حركته، لا لحظته.</li>
+      <li class="fragment"><strong>قِس عدم اليقين</strong> — اذكر ثقتك، ولا تَعِد بما لا تملك.</li>
+    </ol>
+  </section>
+
+  <!-- لعبة: اختبار الحدس · المنتخبات العربية -->
+  <section class="slide" dir="rtl" data-gut>
+    <p class="kicker">اختبار الحدس · المنتخبات العربية</p>
+    <h2 class="t-lg">هل تصمد أمام التضليل؟ 💎</h2>
+    <div class="gut-wrap">
+      <div class="gut-hud">
+        <span>النقاط <b data-score>0</b></span>
+        <span>السلسلة <b data-streak>0</b>🔥</span>
+        <span>صلابة الحدس <b data-solid>0</b></span>
+        <span class="gh-prog" data-prog>1 / 5</span>
+      </div>
+      <div class="gut-card" data-gut-card>
+        <div class="gut-match">
+          <span class="gm-side"><span class="gm-flag" data-team-flag>🇸🇦</span><span data-team>السعودية</span></span>
+          <span class="gm-vs">ضد</span>
+          <span class="gm-side"><span class="gm-flag" data-opp-flag>🇦🇷</span><span data-opp>الأرجنتين</span></span>
+        </div>
+        <div class="gut-fav" data-fav>المرشّح بإجماع الخبراء: الأرجنتين · 2022</div>
+        <div class="gut-dial">
+          <div class="gd-zones"><span>خسارة عربية</span><span>تعادل</span><span>فوز عربي تاريخي</span></div>
+          <input type="range" min="0" max="100" value="50" data-dial aria-label="قرص الحدس">
+          <div class="gd-real" data-real></div>
+        </div>
+        <div class="gut-nudge" data-nudge></div>
+        <div class="gut-actions" data-actions></div>
+        <div class="gut-reveal" data-reveal></div>
+      </div>
+    </div>
+    <p class="t-sm mt-sm">لعبة تفاعلية — كل النتائج حقيقية وموثّقة. «رسائل التضليل» جزءٌ من اللعبة لقياس تمسّكك بحدسك، لا بياناتٍ فعلية.</p>
+  </section>
+
+  <!-- لوحة المتصدّرين الحيّة (Firebase) -->
+  <section class="slide" dir="rtl" data-live-board>
+    <p class="kicker">مشاركة حيّة · نتائج اللعبة</p>
+    <h2 class="t-lg">مَن خبير المفاجآت؟ 🏅</h2>
+    <div class="join" data-join="games.html">
+      <p class="join-line">العبوا «اختبار الحدس»: <span class="link">انشروا الصفحة وضعوا رابطها في live-config.js</span> — ثم أرسلوا نتائجكم.</p>
+      <img class="join-qr" alt="رمز الانضمام للعبة">
+    </div>
+    <iframe class="live-frame" src="board.html" title="لوحة المتصدّرين الحيّة" loading="lazy"></iframe>
+  </section>
+
+  <!-- الختام -->
+  <section class="slide slide-title" dir="rtl">
+    <p class="kicker">الخلاصة</p>
+    <h1 class="t-hero">التوقّع: <span class="accent">إسبانيا</span> الأوفر حظًّا.</h1>
+    <div class="tricolor"><span></span><span></span><span></span></div>
+    <p class="t-md">لكن البطل الحقيقي الذي يبقى معنا بعد البطولة هو <strong>الطريقة</strong>:
+      قاعدةٌ، فنموذج، فإجماع، فتواضعٌ أمام اليقين.</p>
+  </section>
+
+</div><!-- #deck -->
+
+<div class="deck-footer">كأس العالم 2026 · توقّع مبنيّ على البيانات</div>
+
+<script src="deck.js"></script>
+<script src="review.js"></script>
+
+<!-- Deck-only interactivity: the vote/reveal game + bar animation on arrival.
+     Self-contained, no libraries; scoped to this deck's own slides. -->
+<script>
+(function () {
+  /* —— Animate the Opta probability bars when their slide is shown —— */
+  function growBars(slide) {
+    slide.querySelectorAll('[data-bars-h] .bh-fill').forEach(function (fill) {
+      var pct = parseFloat(fill.getAttribute('data-pct')) || 0;
+      var max = 16.1;                       // lead value → full track
+      fill.style.width = (pct / max * 100).toFixed(1) + '%';
+    });
+  }
+
+  /* —— Interactive 3D globe: build lazily the first time its slide is shown —— */
+  var _globeBuilt = false;
+  function loadScript(src, cb) {
+    var s = document.createElement('script'); s.src = src; s.async = true; s.onload = cb;
+    document.head.appendChild(s);
+  }
+  function maybeGlobe(slide) {
+    if (!slide.matches || !slide.matches('[data-globe-slide]')) return;
+    var holder = slide.querySelector('[data-globe]');
+    if (!holder) return;
+    if (_globeBuilt) { if (holder.__resize) holder.__resize(); return; }
+    _globeBuilt = true;
+    loadScript('https://unpkg.com/globe.gl@2/dist/globe.gl.min.js', function () {
+      if (window.Globe) buildGlobe(slide, holder);
+    });
+  }
+  function buildGlobe(slide, holder) {
+    var FINAL = { lat: 40.8128, lng: -74.0742 };   // MetLife — NY/NJ, the final
+    // pct = title odds implied from published market prices (12 Jun 2026), rounded.
+    var TEAMS = [
+      { flag:'🇪🇸', name:'إسبانيا',          lat:40.4168, lng:-3.7038,  pct:16.7 },
+      { flag:'🇫🇷', name:'فرنسا',            lat:48.8566, lng:2.3522,   pct:16.7 },
+      { flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', name:'إنجلترا',         lat:51.5074, lng:-0.1278,  pct:10.5 },
+      { flag:'🇵🇹', name:'البرتغال',         lat:38.7223, lng:-9.1393,  pct:10.0 },
+      { flag:'🇧🇷', name:'البرازيل',         lat:-15.793, lng:-47.882,  pct:9.1 },
+      { flag:'🇦🇷', name:'الأرجنتين',        lat:-34.603, lng:-58.381,  pct:8.3 },
+      { flag:'🇩🇪', name:'ألمانيا',          lat:52.5200, lng:13.4050,  pct:6.7 },
+      { flag:'🇳🇱', name:'هولندا',           lat:52.3676, lng:4.9041,   pct:5.6 },
+      { flag:'🇧🇪', name:'بلجيكا',           lat:50.8503, lng:4.3517,   pct:4.3 },
+      { flag:'🇺🇸', name:'الولايات المتحدة',  lat:38.9072, lng:-77.0369, pct:2.8 },
+      { flag:'🇨🇴', name:'كولومبيا',         lat:4.7110,  lng:-74.0721, pct:2.4 },
+      { flag:'🇺🇾', name:'أوروغواي',         lat:-34.901, lng:-56.164,  pct:1.8 },
+      { flag:'🇲🇦', name:'المغرب',           lat:34.0209, lng:-6.8416,  pct:1.6 },
+      { flag:'🇭🇷', name:'كرواتيا',          lat:45.8150, lng:15.9819,  pct:1.3 }
+    ];
+    var RINGS = [
+      { name:'🔵 أمريكا (مضيف)',  rgb:'74,134,232', lat:32.7767, lng:-96.7970 },
+      { name:'🔴 كندا (مضيف)',    rgb:'228,0,43',   lat:43.6532, lng:-79.3832 },
+      { name:'🟢 المكسيك (مضيف)', rgb:'26,159,90',  lat:19.4326, lng:-99.1332 },
+      { name:'🏆 النهائي',         rgb:'227,181,62', lat:40.8128, lng:-74.0742 }
+    ];
+    var info = slide.querySelector('[data-globe-info]');
+    var giFlag = info && info.querySelector('.gi-flag');
+    var giName = info && info.querySelector('.gi-name');
+    var giPct  = info && info.querySelector('.gi-pct');
+    var giSub  = info && info.querySelector('.gi-sub');
+    function showInfo(d) {
+      if (!info) return;
+      if (d) {
+        giFlag.textContent = d.flag; giName.textContent = d.name;
+        giPct.textContent = d.pct + '%'; giSub.textContent = 'احتمال التتويج الضمنيّ من أسعار السوق';
+      } else {
+        giFlag.textContent = '🏆'; giName.textContent = 'النهائي · نيويورك/نيوجيرسي';
+        giPct.textContent = '19 يوليو'; giSub.textContent = 'كل الخطوط تتّجه إلى ملعب النهائي';
+      }
+    }
+    showInfo(null);
+
+    var g = window.Globe()(holder)
+      .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+      .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
+      .backgroundColor('rgba(0,0,0,0)')
+      .showAtmosphere(true).atmosphereColor('#E3B53E').atmosphereAltitude(0.16)
+      // contenders → glowing bars whose height tracks the implied odds
+      .pointsData(TEAMS).pointsMerge(false)
+      .pointLat('lat').pointLng('lng')
+      .pointColor(function () { return '#E3B53E'; })
+      .pointAltitude(function (d) { return 0.02 + d.pct * 0.014; })
+      .pointRadius(0.45)
+      .onPointHover(function (d) { showInfo(d || null); })
+      // the percentage, printed on the globe (Latin glyphs render reliably)
+      .labelsData(TEAMS)
+      .labelLat('lat').labelLng('lng')
+      .labelText(function (d) { return d.pct + '%'; })
+      .labelSize(function (d) { return 0.7 + d.pct * 0.05; })
+      .labelColor(function () { return 'rgba(244,215,132,0.95)'; })
+      .labelResolution(2)
+      .labelAltitude(function (d) { return 0.02 + d.pct * 0.014 + 0.004; })
+      // routes: every contender → the final city
+      .arcsData(TEAMS.map(function (d) {
+        return { startLat: d.lat, startLng: d.lng, endLat: FINAL.lat, endLng: FINAL.lng };
+      }))
+      .arcColor(function () { return ['rgba(227,181,62,0.85)', 'rgba(244,215,132,0.2)']; })
+      .arcDashLength(0.4).arcDashGap(0.22).arcDashAnimateTime(2600)
+      .arcStroke(0.5).arcAltitudeAutoScale(0.42)
+      // host nations highlighted by pulsing rings (+ a gold ring on the final)
+      .ringsData(RINGS)
+      .ringLat('lat').ringLng('lng')
+      .ringColor(function (d) { return function (t) { return 'rgba(' + d.rgb + ',' + (1 - t).toFixed(2) + ')'; }; })
+      .ringMaxRadius(function () { return 4.5; })
+      .ringPropagationSpeed(function () { return 1.6; })
+      .ringRepeatPeriod(function () { return 850; });
+
+    // Reliable HTML legend below the globe — flags + numbers, and hover to highlight.
+    var legend = slide.querySelector('[data-globe-legend]');
+    if (legend) {
+      legend.innerHTML = '';
+      TEAMS.forEach(function (d) {
+        var c = document.createElement('span'); c.className = 'gl-chip';
+        c.innerHTML = d.flag + ' ' + d.name + ' <b>' + d.pct + '%</b>';
+        c.addEventListener('mouseenter', function () { showInfo(d); });
+        c.addEventListener('mouseleave', function () { showInfo(null); });
+        legend.appendChild(c);
+      });
+      RINGS.forEach(function (r) {
+        var c = document.createElement('span'); c.className = 'gl-chip host';
+        c.textContent = r.name; legend.appendChild(c);
+      });
+    }
+
+    function resize() { var r = holder.getBoundingClientRect(); g.width(r.width); g.height(r.height); }
+    resize();
+    var c = g.controls();
+    c.autoRotate = true; c.autoRotateSpeed = 0.7; c.enableZoom = true;
+    g.pointOfView({ lat: 25, lng: -40, altitude: 2.4 }, 0);
+    window.addEventListener('resize', resize);
+    holder.classList.add('ready');
+    holder.__resize = resize;
+  }
+
+  /* —— Live betting-odds board (The Odds API), refreshed while its slide shows —— */
+  var NAMES_ODDS = {
+    'Spain':{ar:'إسبانيا',fl:'🇪🇸'}, 'France':{ar:'فرنسا',fl:'🇫🇷'},
+    'England':{ar:'إنجلترا',fl:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'}, 'Argentina':{ar:'الأرجنتين',fl:'🇦🇷'},
+    'Brazil':{ar:'البرازيل',fl:'🇧🇷'}, 'Portugal':{ar:'البرتغال',fl:'🇵🇹'},
+    'Germany':{ar:'ألمانيا',fl:'🇩🇪'}, 'Netherlands':{ar:'هولندا',fl:'🇳🇱'},
+    'Belgium':{ar:'بلجيكا',fl:'🇧🇪'}, 'Italy':{ar:'إيطاليا',fl:'🇮🇹'},
+    'Uruguay':{ar:'أوروغواي',fl:'🇺🇾'}, 'Croatia':{ar:'كرواتيا',fl:'🇭🇷'},
+    'USA':{ar:'الولايات المتحدة',fl:'🇺🇸'}, 'United States':{ar:'الولايات المتحدة',fl:'🇺🇸'},
+    'Morocco':{ar:'المغرب',fl:'🇲🇦'}, 'Colombia':{ar:'كولومبيا',fl:'🇨🇴'},
+    'Mexico':{ar:'المكسيك',fl:'🇲🇽'}, 'Japan':{ar:'اليابان',fl:'🇯🇵'},
+    'Denmark':{ar:'الدنمارك',fl:'🇩🇰'}, 'Senegal':{ar:'السنغال',fl:'🇸🇳'},
+    'Switzerland':{ar:'سويسرا',fl:'🇨🇭'}, 'Serbia':{ar:'صربيا',fl:'🇷🇸'},
+    'Korea Republic':{ar:'كوريا الجنوبية',fl:'🇰🇷'}, 'South Korea':{ar:'كوريا الجنوبية',fl:'🇰🇷'},
+    'Saudi Arabia':{ar:'السعودية',fl:'🇸🇦'}, 'Canada':{ar:'كندا',fl:'🇨🇦'},
+    'Poland':{ar:'بولندا',fl:'🇵🇱'}, 'Ecuador':{ar:'الإكوادور',fl:'🇪🇨'},
+    'Australia':{ar:'أستراليا',fl:'🇦🇺'}, 'Ghana':{ar:'غانا',fl:'🇬🇭'}
+  };
+  var PREF_BK = ['pinnacle','bet365','williamhill','betfair_ex_uk','unibet_uk','ladbrokes_uk',
+    'paddypower','betvictor','marathonbet','sport888','coral','skybet','betway','onexbet','betsson','nordicbet','betclic'];
+  var _odds = null;
+  function escHtml(s){ return String(s).replace(/[&<>"]/g, function (c) { return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]; }); }
+  function maybeOdds(activeSlide){
+    var slide = document.querySelector('[data-odds]'); if (!slide) return;
+    if (!slide.__ticker) slide.__ticker = makeTicker(slide);
+    if (activeSlide === slide) slide.__ticker.start(); else slide.__ticker.stop();
+  }
+  function makeTicker(slide){
+    // Real published win-odds (decimal), June 2026. Motion is illustrative only.
+    var DATA = [
+      { n:'إسبانيا', f:'🇪🇸', base:6.0 },  { n:'فرنسا', f:'🇫🇷', base:6.0 },
+      { n:'إنجلترا', f:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', base:9.5 }, { n:'البرتغال', f:'🇵🇹', base:10.0 },
+      { n:'البرازيل', f:'🇧🇷', base:11.0 }, { n:'الأرجنتين', f:'🇦🇷', base:12.0 },
+      { n:'ألمانيا', f:'🇩🇪', base:15.0 }, { n:'هولندا', f:'🇳🇱', base:18.0 },
+      { n:'بلجيكا', f:'🇧🇪', base:23.0 }
+    ];
+    DATA.forEach(function (d) { d.cur = d.base; d.prev = d.base; });
+    var maxImp = Math.max.apply(null, DATA.map(function (d) { return 1 / d.base; }));
+    var table = slide.querySelector('[data-odds-table]');
+    var tickerEl = slide.querySelector('[data-odds-ticker]');
+    var timer = null, refs = [];
+    function build(){
+      var html = '<div class="odds-head"><div>المنتخب</div><div style="text-align:center">السعر</div><div>الاحتمال الضمنيّ</div></div>';
+      DATA.forEach(function (d, i) {
+        html += '<div class="odds-row' + (i === 0 ? ' lead' : '') + '" data-i="' + i + '">' +
+          '<div class="team"><div class="team-line"><span class="fl">' + d.f + '</span>' + d.n + '</div></div>' +
+          '<div class="cell" data-price></div>' +
+          '<div class="imp"><span class="bar"><span class="fill" data-fill></span></span><span class="pct" data-pct></span></div>' +
+          '</div>';
+      });
+      table.innerHTML = html;
+      refs = DATA.map(function (d, i) {
+        var row = table.querySelector('.odds-row[data-i="' + i + '"]');
+        return { price: row.querySelector('[data-price]'), fill: row.querySelector('[data-fill]'),
+                 pct: row.querySelector('[data-pct]'), cell: row.querySelector('.cell') };
+      });
+      DATA.forEach(function (d, i) { paint(i, false); });
+      buildTicker();
+    }
+    function paint(i, withArrow){
+      var d = DATA[i], r = refs[i], imp = 1 / d.cur, arrow = '';
+      if (withArrow && d.cur !== d.prev) arrow = d.cur < d.prev ? '<span class="ar up">▲</span>' : '<span class="ar down">▼</span>';
+      r.price.innerHTML = d.cur.toFixed(2) + arrow;
+      r.fill.style.width = Math.min(100, imp / maxImp * 100).toFixed(1) + '%';
+      r.pct.textContent = (imp * 100).toFixed(1) + '%';
+      if (withArrow && d.cur !== d.prev) { r.cell.classList.remove('flash'); void r.cell.offsetWidth; r.cell.classList.add('flash'); }
+    }
+    function buildTicker(){
+      var one = DATA.map(function (d) { return '<span class="odds-ticker-item">' + d.f + ' <b>' + d.n + '</b> ' + d.cur.toFixed(2) + '</span>'; }).join('');
+      tickerEl.innerHTML = one + one;   // duplicated for a seamless marquee loop
+    }
+    function tick(){
+      var i = Math.floor(Math.random() * DATA.length), d = DATA[i];
+      d.prev = d.cur;
+      var span = d.base * 0.06;          // hover within ±6% of the real price
+      d.cur = +Math.max(d.base - span, Math.min(d.base + span, d.cur + (Math.random() - 0.5) * span)).toFixed(2);
+      paint(i, true);
+      if (Math.random() < 0.25) buildTicker();
+    }
+    function start(){
+      if (timer) return;
+      if (!refs.length) build();
+      timer = setInterval(function () {
+        if (!slide.classList.contains('active')) { clearInterval(timer); timer = null; return; }
+        tick();
+      }, 1600);
+    }
+    function stop(){ if (timer) { clearInterval(timer); timer = null; } }
+    return { start: start, stop: stop };
+  }
+  function createOdds(slide){
+    var cfg = window.LIVE_CONFIG || {};
+    var table = slide.querySelector('[data-odds-table]');
+    var updatedEl = slide.querySelector('[data-odds-updated]');
+    var prev = {}, timer = null, secs = 0;
+    function url(){
+      var key = cfg.oddsApiKey || '';
+      var u = 'https://api.the-odds-api.com/v4/sports/' + (cfg.oddsSport || 'soccer_fifa_world_cup_winner') +
+              '/odds/?apiKey=' + encodeURIComponent(key) + '&regions=' + (cfg.oddsRegions || 'uk') +
+              '&markets=outrights&oddsFormat=decimal';
+      return cfg.oddsProxy ? (cfg.oddsProxy + encodeURIComponent(u)) : u;
+    }
+    function label(){ updatedEl.textContent = secs <= 0 ? 'حُدّث الآن' : ('آخر تحديث: قبل ' + secs + ' ث'); }
+    function msg(t){ table.innerHTML = '<div class="odds-msg">' + t + '</div>'; }
+    function fetchNow(){
+      var key = cfg.oddsApiKey || '';
+      if (!key || key.indexOf('YOUR_') === 0) { msg('أضِف مفتاح The Odds API في <b>live-config.js</b> (oddsApiKey) لعرض الأسعار الحيّة.'); return; }
+      fetch(url()).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(render)
+        .catch(function (e) { msg('تعذّر جلب الأسعار: ' + escHtml(e.message) + '<br>قد يكون المفتاح غير صحيح أو حُجب CORS — أخبرني لأضيف وسيطًا على Render.'); });
+    }
+    function render(data){
+      if (!Array.isArray(data) || !data.length) { msg('لا توجد أسعار متاحة الآن لهذه البطولة.'); return; }
+      var bks = data[0].bookmakers || [], chosen = [], i;
+      PREF_BK.forEach(function (k) { if (chosen.length < 3) for (var j = 0; j < bks.length; j++) if (bks[j].key === k) { chosen.push(bks[j]); break; } });
+      for (i = 0; i < bks.length && chosen.length < 3; i++) if (chosen.indexOf(bks[i]) < 0) chosen.push(bks[i]);
+      if (!chosen.length) { msg('لا توجد مواقع متاحة الآن.'); return; }
+      var teams = {};
+      chosen.forEach(function (b) {
+        var mk = b.markets || [], m = null;
+        for (var j = 0; j < mk.length; j++) if (mk[j].key === 'outrights') { m = mk[j]; break; }
+        if (!m) m = mk[0]; if (!m) return;
+        (m.outcomes || []).forEach(function (o) { if (!teams[o.name]) teams[o.name] = {}; teams[o.name][b.key] = o.price; });
+      });
+      var rows = Object.keys(teams).map(function (name) {
+        var ps = []; chosen.forEach(function (b) { var p = teams[name][b.key]; if (p > 0) ps.push(p); });
+        var imp = ps.length ? ps.reduce(function (a, p) { return a + 1 / p; }, 0) / ps.length : 0;
+        return { name: name, prices: teams[name], imp: imp };
+      }).filter(function (r) { return r.imp > 0; }).sort(function (a, b) { return b.imp - a.imp; }).slice(0, 9);
+      if (!rows.length) { msg('لا توجد أسعار متاحة الآن.'); return; }
+      var maxImp = rows[0].imp;
+      var html = '<div class="odds-head"><div>المنتخب · احتمال ضمنيّ</div>' +
+        chosen.map(function (b) { return '<div style="text-align:center">' + escHtml(b.title || b.key) + '</div>'; }).join('') + '</div>';
+      rows.forEach(function (r, idx) {
+        var nm = NAMES_ODDS[r.name] || { ar: r.name, fl: '🌐' };
+        html += '<div class="odds-row' + (idx === 0 ? ' lead' : '') + '">' +
+          '<div class="team"><div class="team-line"><span class="fl">' + nm.fl + '</span>' + escHtml(nm.ar) + '</div>' +
+          '<div class="team-imp"><span class="bar"><span class="fill" style="width:' + (r.imp / maxImp * 100).toFixed(1) + '%"></span></span>' +
+          '<span class="pct">' + (r.imp * 100).toFixed(1) + '%</span></div></div>';
+        chosen.forEach(function (b) {
+          var p = r.prices[b.key], key = r.name + '|' + b.key, arrow = '', flash = '';
+          if (p && prev[key] != null && prev[key] !== p) { flash = ' flash'; arrow = p < prev[key] ? '<span class="ar up">▲</span>' : '<span class="ar down">▼</span>'; }
+          if (p != null) prev[key] = p;
+          html += '<div class="cell' + flash + '">' + (p != null ? p.toFixed(2) + arrow : '—') + '</div>';
+        });
+        html += '</div>';
+      });
+      table.innerHTML = html;
+      secs = 0; label();
+    }
+    function activate(){
+      if (timer) return;
+      fetchNow();
+      timer = setInterval(function () {
+        if (!slide.classList.contains('active')) { clearInterval(timer); timer = null; return; }
+        secs++; label(); if (secs % 25 === 0) fetchNow();
+      }, 1000);
+    }
+    return { activate: activate };
+  }
+
+  /* —— The prediction game —— */
+  function setupVote(slide) {
+    var cards = Array.prototype.slice.call(slide.querySelectorAll('.vote-card'));
+    var verdict = slide.querySelector('[data-verdict]');
+    var revealBtn = slide.querySelector('[data-reveal]');
+    var resetBtn = slide.querySelector('[data-reset]');
+    var votes = {}, revealed = false;
+    cards.forEach(function (c) { votes[c.getAttribute('data-k')] = 0; });
+
+    function totalVotes() {
+      var t = 0; for (var k in votes) t += votes[k]; return t;
+    }
+    function redraw() {
+      var max = 1;
+      cards.forEach(function (c) { max = Math.max(max, votes[c.getAttribute('data-k')]); });
+      cards.forEach(function (c) {
+        var k = c.getAttribute('data-k');
+        c.querySelector('.vote-tally').textContent = votes[k];
+        c.querySelector('.vote-fill').style.width = (votes[k] / max * 100) + '%';
+      });
+    }
+    cards.forEach(function (c) {
+      c.addEventListener('click', function () {
+        if (revealed) return;             // votes lock once analysis is shown
+        votes[c.getAttribute('data-k')]++;
+        redraw();
+      });
+    });
+    function reveal() {
+      revealed = true;
+      cards.forEach(function (c) {
+        c.classList.add('show-model');
+        if (c.getAttribute('data-k') === 'es') c.classList.add('is-pick');
+      });
+      var n = totalVotes();
+      verdict.innerHTML = 'حين تتقاطع الطبقات الثلاث، ترجّح البيانات: '
+        + '🇪🇸 <strong>إسبانيا</strong> — أعلى احتمالٍ في النموذج (16.1%) والأوفر في السوق (9/2).'
+        + (n ? ' فهل وافق حدس الغرفة البيانات؟' : '');
+      verdict.classList.add('show');
+    }
+    function reset() {
+      revealed = false;
+      for (var k in votes) votes[k] = 0;
+      cards.forEach(function (c) { c.classList.remove('show-model', 'is-pick'); });
+      verdict.classList.remove('show'); verdict.textContent = '';
+      redraw();
+    }
+    if (revealBtn) revealBtn.addEventListener('click', reveal);
+    if (resetBtn) resetBtn.addEventListener('click', reset);
+    redraw();
+  }
+
+  /* —— The data journey: blend three real signals, watch the leader move —— */
+  function setupMixer(slide) {
+    // Each signal is a share-of-field over the same eight contenders (sums ~100):
+    //   bet  — implied from published odds (Spain 9/2 … Netherlands 20/1)
+    //   mod  — Opta supercomputer win %
+    //   his  — actual World Cup titles, normalised (Brazil 5 … Spain 1)
+    var SIG = {
+      bet: { es:19.8, fr:18.1, en:14.5, ar:10.9, pt:12.1, br:12.1, de:7.3, nl:5.2 },
+      mod: { es:22.1, fr:17.8, en:15.3, ar:14.2, pt:9.6,  br:9.0,  de:7.0, nl:4.9 },
+      his: { es:6.25, fr:12.5, en:6.25, ar:18.75, pt:0,   br:31.25, de:25.0, nl:0 }
+    };
+    var NAME = { es:'🇪🇸 إسبانيا', fr:'🇫🇷 فرنسا', en:'🏴󠁧󠁢󠁥󠁮󠁧󠁿 إنجلترا', ar:'🇦🇷 الأرجنتين',
+                 pt:'🇵🇹 البرتغال', br:'🇧🇷 البرازيل', de:'🇩🇪 ألمانيا', nl:'🇳🇱 هولندا' };
+    var keys = ['es','fr','en','ar','pt','br','de','nl'];
+    var sliders = {
+      bet: slide.querySelector('[data-slider="bet"]'),
+      mod: slide.querySelector('[data-slider="mod"]'),
+      his: slide.querySelector('[data-slider="his"]')
+    };
+    var wlab = {
+      bet: slide.querySelector('[data-w="bet"]'),
+      mod: slide.querySelector('[data-w="mod"]'),
+      his: slide.querySelector('[data-w="his"]')
+    };
+    var rows = {};
+    keys.forEach(function (k) { rows[k] = slide.querySelector('.mx-row[data-c="' + k + '"]'); });
+    var leadEl = slide.querySelector('[data-lead]');
+    var noteEl = slide.querySelector('[data-note]');
+
+    function compute() {
+      var rb = +sliders.bet.value, rm = +sliders.mod.value, rh = +sliders.his.value;
+      var s = rb + rm + rh; if (s === 0) { rb = rm = rh = 1; s = 3; }
+      var wb = rb / s, wm = rm / s, wh = rh / s;
+      wlab.bet.textContent = Math.round(wb * 100) + '%';
+      wlab.mod.textContent = Math.round(wm * 100) + '%';
+      wlab.his.textContent = Math.round(wh * 100) + '%';
+
+      var vals = {}, max = 0, lead = keys[0];
+      keys.forEach(function (k) {
+        var v = wb * SIG.bet[k] + wm * SIG.mod[k] + wh * SIG.his[k];
+        vals[k] = v; if (v > max) { max = v; lead = k; }
+      });
+      keys.forEach(function (k) {
+        var row = rows[k];
+        row.querySelector('.mx-fill').style.width = (max ? vals[k] / max * 100 : 0) + '%';
+        row.querySelector('.mx-val').textContent = vals[k].toFixed(1) + '%';
+        row.classList.toggle('lead', k === lead);
+      });
+      leadEl.textContent = 'المتصدّر وفق مزجك: ' + NAME[lead] + ' · ' + vals[lead].toFixed(1) + '%';
+      var bare = NAME[lead].split(' ')[1];
+      if (lead === 'es') {
+        noteEl.textContent = 'السوق والنماذج متّفقان على إسبانيا — يبقى الميل لها ما لم تُغلَّب كفّة التاريخ.';
+      } else if (lead === 'br' || lead === 'de' || lead === 'ar') {
+        noteEl.textContent = 'أَعليتَ كفّة الإرث التاريخي، فتصدّر ' + bare + ' — هنا تفترق «أرقام اليوم» عن «سجلّ الماضي».';
+      } else {
+        noteEl.textContent = 'المتصدّر الآن ' + bare + ' — جرّب توزيعًا آخر للأوزان.';
+      }
+    }
+    ['bet','mod','his'].forEach(function (k) {
+      sliders[k].addEventListener('input', compute);
+    });
+    compute();
+  }
+
+  /* —— Intuition game: predict, get nudged, reveal; measures gut conviction —— */
+  function setupGut(slide) {
+    var card = slide.querySelector('[data-gut-card]');
+    if (!card) return;
+    var hud = {
+      score: slide.querySelector('[data-score]'), streak: slide.querySelector('[data-streak]'),
+      solid: slide.querySelector('[data-solid]'), prog: slide.querySelector('[data-prog]')
+    };
+    var originalHTML = card.innerHTML;
+    // All results are real and documented; the "nudges" are a game device.
+    var MATCHES = [
+      { teamFlag:'🇸🇦', team:'السعودية', oppFlag:'🇦🇷', opp:'الأرجنتين', year:'2022', fav:'الأرجنتين', realScore:'2–1', realOutcome:'win', reveal:'فازت السعودية على بطلة العالم القادمة — من أكبر مفاجآت التاريخ.', shock:96, nudge:'crowd' },
+      { teamFlag:'🇹🇳', team:'تونس', oppFlag:'🇫🇷', opp:'فرنسا', year:'2022', fav:'فرنسا', realScore:'1–0', realOutcome:'win', reveal:'أسقطت تونس حاملةَ لقب 2018 ووصيفةَ 2022.', shock:78, nudge:'expert' },
+      { teamFlag:'🇩🇿', team:'الجزائر', oppFlag:'🇩🇪', opp:'ألمانيا الغربية', year:'1982', fav:'ألمانيا الغربية', realScore:'2–1', realOutcome:'win', reveal:'صدمت الجزائر بطلَ أوروبا في أوّل ظهورٍ لها بالمونديال.', shock:90, nudge:'doubt' },
+      { teamFlag:'🇲🇦', team:'المغرب', oppFlag:'🇵🇹', opp:'البرتغال', year:'2022', fav:'البرتغال', realScore:'1–0', realOutcome:'win', reveal:'المغرب يبلغ نصف النهائي — أوّل منتخبٍ عربيّ وإفريقيّ.', shock:88, nudge:'timer' },
+      { teamFlag:'🇶🇦', team:'قطر', oppFlag:'🇳🇱', opp:'هولندا', year:'2022', fav:'هولندا', realScore:'0–2', realOutcome:'loss', reveal:'خسرت قطر وودّعت كأوّل مضيفٍ يخرج بثلاث هزائم — أحيانًا المرشّح يصدُق.', shock:22, nudge:'all' }
+    ];
+    var refs = {}, st = {};
+    function bind() {
+      refs.dial = card.querySelector('[data-dial]');
+      refs.teamFlag = card.querySelector('[data-team-flag]'); refs.team = card.querySelector('[data-team]');
+      refs.oppFlag = card.querySelector('[data-opp-flag]'); refs.opp = card.querySelector('[data-opp]');
+      refs.fav = card.querySelector('[data-fav]'); refs.nudge = card.querySelector('[data-nudge]');
+      refs.actions = card.querySelector('[data-actions]'); refs.reveal = card.querySelector('[data-reveal]');
+      refs.real = card.querySelector('[data-real]');
+      if (refs.dial) refs.dial.addEventListener('keydown', function (e) { e.stopPropagation(); });
+    }
+    function zone(v) { return v < 34 ? 'loss' : (v < 67 ? 'draw' : 'win'); }
+    function realPos(o) { return o === 'loss' ? 16 : (o === 'draw' ? 50 : 84); }
+    function clearTimer() { if (st.timer) { clearInterval(st.timer); st.timer = null; } }
+    function setActions(btns) {
+      refs.actions.innerHTML = '';
+      btns.forEach(function (b) {
+        var el = document.createElement('button');
+        el.className = 'gut-btn' + (b.ghost ? ' ghost' : ''); el.textContent = b.label;
+        el.addEventListener('click', b.fn); refs.actions.appendChild(el);
+      });
+    }
+    function nudgeMsgs(m) {
+      if (m.nudge === 'crowd')  return ['🗣️ <strong>همسة الغرفة:</strong> «الجميع يراهن على ' + m.fav + '… لا تكن الوحيد المخطئ.»'];
+      if (m.nudge === 'expert') return ['🎓 <strong>صوت الخبير:</strong> «كل التوقّعات الرسمية ترجّح ' + m.fav + ' بثقةٍ تامّة.»'];
+      if (m.nudge === 'doubt')  return ['😬 <strong>بذرة الشك:</strong> «متأكّد من حدسك؟ كثيرون ندموا على جرأتهم في آخر لحظة.»'];
+      if (m.nudge === 'timer')  return ['⏱️ <strong>قرارٌ تحت الضغط:</strong> احسم بسرعة — الوقت ينفد!'];
+      return [
+        '🗣️ <strong>الغرفة:</strong> «المضيف لا يخرج صفر اليدين — صوّت لقطر!»',
+        '🎓 <strong>الخبير:</strong> «الجماهير ستحمل قطر، الزخم كلّه لها.»',
+        '😬 <strong>الشك:</strong> «بعد كل هذه المفاجآت، لا تكسر القاعدة الآن…»'
+      ];
+    }
+    function showNudge(m) {
+      refs.nudge.innerHTML = '';
+      nudgeMsgs(m).forEach(function (t) { var d = document.createElement('div'); d.className = 'gn-msg'; d.innerHTML = t; refs.nudge.appendChild(d); });
+      if (m.nudge === 'timer' || m.nudge === 'all') {
+        var td = document.createElement('div'); td.className = 'gn-msg';
+        var sp = document.createElement('span'); sp.className = 'gn-timer';
+        td.appendChild(document.createTextNode('⏱️ القرار ينتهي خلال: ')); td.appendChild(sp);
+        refs.nudge.appendChild(td);
+        var t = 8; sp.textContent = t + 'ث';
+        st.timer = setInterval(function () { t--; if (t < 0) t = 0; sp.textContent = t + 'ث'; if (t <= 0) { clearTimer(); commit(true); } }, 1000);
+      }
+    }
+    function loadCard() {
+      clearTimer(); var m = MATCHES[st.i]; st.phase = 'instinct';
+      refs.teamFlag.textContent = m.teamFlag; refs.team.textContent = m.team;
+      refs.oppFlag.textContent = m.oppFlag; refs.opp.textContent = m.opp;
+      refs.fav.textContent = 'المرشّح بإجماع الخبراء: ' + m.fav + ' · ' + m.year;
+      refs.dial.value = 50; refs.dial.disabled = false;
+      refs.nudge.innerHTML = ''; refs.reveal.className = 'gut-reveal'; refs.reveal.innerHTML = '';
+      refs.real.className = 'gd-real';
+      hud.prog.textContent = (st.i + 1) + ' / ' + MATCHES.length;
+      setActions([{ label: 'أثبّت حدسي 🔒', fn: lockInstinct }]);
+    }
+    function lockInstinct() {
+      st.firstVal = +refs.dial.value; st.firstZone = zone(st.firstVal); st.phase = 'tempt';
+      showNudge(MATCHES[st.i]);
+      setActions([
+        { label: 'أتمسّك بحدسي 💪', fn: function () { commit(true); } },
+        { label: 'أغيّر وأؤكّد', ghost: true, fn: function () { commit(false); } }
+      ]);
+    }
+    function commit(stuck) {
+      if (st.phase !== 'tempt') return;
+      clearTimer(); var m = MATCHES[st.i]; st.phase = 'reveal'; refs.dial.disabled = true;
+      var finalVal = stuck ? st.firstVal : +refs.dial.value;
+      var finalZone = stuck ? st.firstZone : zone(finalVal);
+      if (stuck) refs.dial.value = st.firstVal;
+      refs.real.style.insetInlineStart = realPos(m.realOutcome) + '%';
+      refs.real.classList.add('show');
+      var correct = finalZone === m.realOutcome;
+      var firstWasCorrect = st.firstZone === m.realOutcome;
+      var held = finalZone === st.firstZone;
+      if (firstWasCorrect) st.firstCorrect++;
+      if (held) st.solidCount++;
+      if (firstWasCorrect && held) st.stuckHeldCorrect++;
+      if (firstWasCorrect && !held && !correct) st.cavedFromCorrect++;
+      var base = correct ? 100 : 0;
+      var conv = correct ? Math.round(Math.abs(finalVal - 50) / 50 * 50) : 0;
+      if (correct) { st.streak++; st.correctCount++; } else { st.streak = 0; }
+      var mult = 1 + Math.max(0, st.streak - 1) * 0.25;
+      var gained = Math.round((base + conv) * mult);
+      st.score += gained;
+      hud.score.textContent = st.score; hud.streak.textContent = st.streak; hud.solid.textContent = st.solidCount;
+      var fb;
+      if (correct && held && firstWasCorrect) fb = '💎 صمدتَ أمام التضليل وكنت محقًّا! مكافأة صلابة.';
+      else if (firstWasCorrect && !held && !correct) fb = '📉 كان حدسك الأوّل صائبًا… لكن التضليل أوقعك!';
+      else if (!firstWasCorrect && correct) fb = '🔁 غيّرتَ إلى الصواب — أحيانًا التراجع حكمة.';
+      else if (correct) fb = '✅ أصبت!';
+      else fb = '❌ لم تُصب — والمفاجأة أكبر مما تظن.';
+      refs.reveal.innerHTML =
+        '<div class="gr-result">النتيجة: ' + m.team + ' ' + m.realScore + ' ' + m.opp + ' · <span style="color:var(--accent)">+' + gained + '</span></div>' +
+        '<div class="gr-feed">' + m.reveal + '</div>' +
+        '<div class="gr-feed">' + fb + '</div>' +
+        '<div class="gr-shock"><div class="grs-track"><div class="grs-fill" data-shockfill></div></div><div class="grs-lbl">مقياس الصدمة: ' + m.shock + '٪</div></div>';
+      refs.reveal.classList.add('show');
+      var ff = refs.reveal.querySelector('[data-shockfill]');
+      requestAnimationFrame(function () { requestAnimationFrame(function () { if (ff) ff.style.width = m.shock + '%'; }); });
+      var last = st.i === MATCHES.length - 1;
+      setActions([{ label: last ? 'النتيجة النهائية 🏆' : 'التالي ←', fn: function () { if (last) showFinal(); else { st.i++; loadCard(); } } }]);
+    }
+    function showFinal() {
+      clearTimer(); var n = MATCHES.length, title;
+      if (st.correctCount >= 4 && st.stuckHeldCorrect >= 3) title = 'حدسٌ من فولاذ 💎';
+      else if (st.cavedFromCorrect >= 2) title = 'ريشةٌ في مهبّ الرأي 🪶';
+      else if (st.correctCount >= 3) title = 'قارئ المفاجآت 🔮';
+      else title = 'الحدس ما زال يتدرّب 🌱';
+      var key2 = st.cavedFromCorrect > 0 ? ' — وتراجعتَ عن حدسٍ صائب <b>' + st.cavedFromCorrect + '</b> مرّة بفعل التضليل.' : '.';
+      card.innerHTML =
+        '<div class="gut-final">' +
+        '<div class="gf-title">' + title + '</div>' +
+        '<div class="gf-scores">' +
+          '<div class="metric"><div class="figure">' + st.score + '</div><div class="label">النقاط</div></div>' +
+          '<div class="metric"><div class="figure">' + st.correctCount + '/' + n + '</div><div class="label">توقّعات صائبة</div></div>' +
+          '<div class="metric"><div class="figure">' + st.solidCount + '/' + n + '</div><div class="label">تمسّكت بحدسك</div></div>' +
+        '</div>' +
+        '<div class="gf-key">حين كان حدسك الأوّل صائبًا، تمسّكتَ به <b>' + st.stuckHeldCorrect + '</b> من <b>' + st.firstCorrect + '</b> مرّة' + key2 + '</div>' +
+        '<div class="gf-key">الدرس: التوقّعات «الواثقة» كثيرًا ما تُخطئ — وحدسك المدروس قد يكون أصدق. ثِق به، راجِعه، ولا تتركه لمجرّد ضجيج.</div>' +
+        '<div class="gut-actions" style="justify-content:center"><button class="gut-btn" data-replay>أعد المحاولة 🔄</button></div>' +
+        '</div>';
+      card.querySelector('[data-replay]').addEventListener('click', reset);
+    }
+    function reset() {
+      clearTimer();
+      st = { i:0, phase:'instinct', firstVal:50, firstZone:'draw', score:0, streak:0, solidCount:0, stuckHeldCorrect:0, firstCorrect:0, cavedFromCorrect:0, correctCount:0, timer:null };
+      card.innerHTML = originalHTML; bind();
+      hud.score.textContent = '0'; hud.streak.textContent = '0'; hud.solid.textContent = '0';
+      loadCard();
+    }
+    bind(); reset();
+  }
+
+  /* —— Wire up once the DOM is ready —— */
+  function init() {
+    var vote = document.querySelector('[data-vote]');
+    if (vote) setupVote(vote);
+    var mixer = document.querySelector('[data-mixer]');
+    if (mixer) setupMixer(mixer);
+    var gut = document.querySelector('[data-gut]');
+    if (gut) setupGut(gut);
+    // animate bars now if their slide starts active, and again on each arrival
+    document.querySelectorAll('[data-bars-h]').forEach(function (b) {
+      var s = b.closest('.slide'); if (s && s.classList.contains('active')) growBars(s);
+    });
+    var obs = new MutationObserver(function (muts) {
+      muts.forEach(function (m) {
+        if (m.attributeName === 'class' && m.target.classList.contains('active')) { growBars(m.target); maybeGlobe(m.target); maybeOdds(m.target); }
+      });
+    });
+    document.querySelectorAll('.slide').forEach(function (s) {
+      obs.observe(s, { attributes: true, attributeFilter: ['class'] });
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+
+<!-- Wire the embedded boards (room + organizer reset) and fill join links / QR codes. -->
+<script>
+(function () {
+  var cfg = window.LIVE_CONFIG || {};
+  var room = cfg.room || 'main';
+  var base = (cfg.publicBaseUrl || '').replace(/\/+$/, '');
+  // Embedded boards share the deck's room and get organizer powers (the reset button).
+  document.querySelectorAll('.live-frame').forEach(function (f) {
+    var src = (f.getAttribute('src') || '').split('?')[0];
+    f.setAttribute('src', src + '?room=' + encodeURIComponent(room) + '&admin=1');
+  });
+  if (!base) return;
+  var join = function (page) { return base + '/' + page + (room !== 'main' ? '?room=' + encodeURIComponent(room) : ''); };
+  document.querySelectorAll('[data-join]').forEach(function (box) {
+    var url = join(box.getAttribute('data-join'));
+    var link = box.querySelector('.link'), qr = box.querySelector('.join-qr');
+    if (link) link.textContent = url;
+    if (qr) { qr.src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(url); qr.style.display = 'block'; }
+  });
+  var bigUrl = base + '/' + (room !== 'main' ? '?room=' + encodeURIComponent(room) : '');
+  document.querySelectorAll('[data-bigqr]').forEach(function (img) {
+    img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=8&data=' + encodeURIComponent(bigUrl);
+  });
+  document.querySelectorAll('[data-bigqr-url]').forEach(function (el) { el.textContent = bigUrl.replace(/^https?:\/\//, ''); });
+})();
+</script>
+
+</body>
+</html>

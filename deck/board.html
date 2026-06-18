@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>لوحة المتصدّرين — مباشر</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#0C0C10; --panel:#16161D; --line:#2A2A33; --ink:#F6F2E8; --soft:#D3CCBE; --faint:#8C8578;
+    --gold:#E3B53E; --gold-soft:#F4D784; --red:#E0726A;
+    --sans:"IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif; }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ height:100%; background:transparent; color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; }
+  .board{ height:100%; display:flex; flex-direction:column; padding:clamp(14px,2.4vw,26px); }
+  .top{ display:flex; align-items:baseline; gap:12px; }
+  .ttl{ font-weight:600; font-size:clamp(1.2rem,2.6vw,1.9rem); }
+  .live{ font-size:.8rem; font-weight:600; color:#6FCF97; background:rgba(111,207,151,.16); border-radius:999px; padding:3px 12px; }
+  .count{ margin-inline-start:auto; color:var(--faint); font-size:clamp(.9rem,1.6vw,1.1rem); }
+  .list{ flex:1 1 0; display:flex; flex-direction:column; gap:clamp(7px,1.2vh,12px); justify-content:center; margin-top:14px; }
+  .ent{ display:grid; grid-template-columns:2.6em 1fr auto; align-items:center; gap:14px;
+    background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:clamp(10px,1.6vh,16px) 18px; }
+  .rk{ font-family:var(--sans); font-weight:600; font-size:clamp(1.1rem,2.2vw,1.6rem); color:var(--faint); text-align:center; }
+  .ent.top1{ border-color:var(--gold); box-shadow:0 0 22px rgba(227,181,62,.3); }
+  .ent.top1 .rk, .ent.top2 .rk, .ent.top3 .rk{ color:var(--gold); }
+  .nm{ font-size:clamp(1.05rem,2.2vw,1.5rem); font-weight:500; }
+  .ti{ color:var(--faint); font-size:clamp(.82rem,1.5vw,1rem); margin-inline-start:8px; }
+  .sc{ font-family:var(--sans); font-weight:600; font-size:clamp(1.2rem,2.4vw,1.7rem); color:var(--gold); }
+  .empty{ flex:1; display:grid; place-items:center; color:var(--faint); text-align:center; font-size:1.1rem; line-height:1.8; }
+  .reset{ margin-inline-start:8px; font-family:var(--sans); font-size:.8rem; color:var(--faint);
+    background:transparent; border:1px solid var(--line); border-radius:999px; padding:3px 11px; cursor:pointer; }
+  .reset:hover{ color:var(--red); border-color:var(--red); }
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="live-config.js"></script>
+</head>
+<body>
+<div class="board">
+  <div class="top"><span class="ttl">لوحة المتصدّرين 🏅</span><span class="live">● مباشر</span><span class="count" id="count"></span><button class="reset" id="reset" style="display:none">🗑 تصفير</button></div>
+  <div id="list" class="list"></div>
+</div>
+<script>
+(function () {
+  var L = window.LIVE_INIT();
+  var list = document.getElementById('list'), countEl = document.getElementById('count');
+  if (!L.ready) { list.innerHTML = '<div class="empty">بانتظار إعداد Firebase في <b>live-config.js</b></div>'; return; }
+  var medal = ['🥇', '🥈', '🥉'];
+  list.innerHTML = '<div class="empty">لا نتائج بعد — العبوا «اختبار الحدس» على جوّالكم وأرسلوا نتائجكم!</div>';
+
+  // Organizer-only reset (only when opened with ?admin=1; the deck embeds it that way).
+  var admin = new URLSearchParams(location.search).get('admin') === '1';
+  var rb = document.getElementById('reset');
+  if (admin && rb) {
+    rb.style.display = '';
+    rb.addEventListener('click', function () {
+      if (!confirm('تصفير كل نتائج هذه الغرفة؟ لا يمكن التراجع.')) return;
+      L.db.collection('rooms').doc(L.room).collection('scores').get().then(function (s) {
+        var batch = L.db.batch(); s.forEach(function (d) { batch.delete(d.ref); }); return batch.commit();
+      }).catch(function (e) { alert('تعذّر التصفير: ' + e.message); });
+    });
+  }
+
+  L.db.collection('rooms').doc(L.room).collection('scores').orderBy('score', 'desc').limit(12)
+    .onSnapshot(function (snap) {
+      var rows = []; snap.forEach(function (d) { rows.push(d.data()); });
+      countEl.textContent = rows.length ? (rows.length + ' لاعب') : '';
+      if (!rows.length) { list.innerHTML = '<div class="empty">لا نتائج بعد — العبوا «اختبار الحدس» على جوّالكم وأرسلوا نتائجكم!</div>'; return; }
+      list.innerHTML = rows.map(function (r, i) {
+        var cls = i < 3 ? ' top' + (i + 1) : '';
+        var rk = i < 3 ? medal[i] : (i + 1);
+        var name = (r.name || 'لاعب').toString().slice(0, 24);
+        var title = r.title ? '<span class="ti">' + r.title + '</span>' : '';
+        return '<div class="ent' + cls + '"><span class="rk">' + rk + '</span>' +
+          '<span class="nm">' + name + title + '</span>' +
+          '<span class="sc">' + (r.score || 0) + '</span></div>';
+      }).join('');
+    });
+})();
+</script>
+</body>
+</html>

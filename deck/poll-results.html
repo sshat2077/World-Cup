@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>توقّعات الغرفة — مباشر</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#0C0C10; --panel:#16161D; --line:#2A2A33; --ink:#F6F2E8; --soft:#D3CCBE; --faint:#8C8578;
+    --gold:#E3B53E; --gold-soft:#F4D784; --red:#E0726A;
+    --sans:"IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif; }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ height:100%; background:transparent; color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; }
+  .board{ height:100%; display:flex; flex-direction:column; padding:clamp(14px,2.4vw,26px); }
+  .top{ display:flex; align-items:baseline; gap:12px; }
+  .ttl{ font-weight:600; font-size:clamp(1.2rem,2.6vw,1.9rem); }
+  .live{ font-size:.8rem; font-weight:600; color:#6FCF97; background:rgba(111,207,151,.16);
+    border-radius:999px; padding:3px 12px; }
+  .total{ margin-inline-start:auto; color:var(--faint); font-size:clamp(.9rem,1.6vw,1.1rem); }
+  .bars{ flex:1 1 0; display:flex; flex-direction:column; gap:clamp(8px,1.4vh,14px); justify-content:center; margin-top:14px; }
+  .row{ display:grid; grid-template-columns:8.5em 1fr 2.8em; align-items:center; gap:14px; }
+  .nm{ font-size:clamp(1rem,2vw,1.4rem); color:var(--ink); }
+  .track{ height:clamp(22px,3.4vh,34px); background:var(--panel); border:1px solid var(--line); border-radius:9px; overflow:hidden; }
+  .fill{ height:100%; width:0; border-radius:9px; background:linear-gradient(90deg,var(--gold),var(--gold-soft));
+    transition:width .6s cubic-bezier(.2,.8,.2,1); }
+  .row.lead .fill{ box-shadow:0 0 18px rgba(227,181,62,.55); }
+  .val{ font-family:var(--sans); font-weight:600; color:var(--gold); font-size:clamp(1.05rem,2vw,1.5rem); text-align:center; }
+  .empty{ flex:1; display:grid; place-items:center; color:var(--faint); text-align:center; font-size:1.1rem; line-height:1.8; }
+  .reset{ margin-inline-start:8px; font-family:var(--sans); font-size:.8rem; color:var(--faint);
+    background:transparent; border:1px solid var(--line); border-radius:999px; padding:3px 11px; cursor:pointer; }
+  .reset:hover{ color:var(--red); border-color:var(--red); }
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="live-config.js"></script>
+</head>
+<body>
+<div class="board">
+  <div class="top"><span class="ttl">ماذا يتوقّع الفريق؟ 🏆</span><span class="live">● مباشر</span><span class="total" id="total"></span><button class="reset" id="reset" style="display:none">🗑 تصفير</button></div>
+  <div id="bars" class="bars"></div>
+</div>
+<script>
+(function () {
+  var TEAMS = [
+    { k:'es', n:'إسبانيا', f:'🇪🇸' }, { k:'fr', n:'فرنسا', f:'🇫🇷' },
+    { k:'en', n:'إنجلترا', f:'🏴󠁧󠁢󠁥󠁮󠁧󠁿' }, { k:'ar', n:'الأرجنتين', f:'🇦🇷' },
+    { k:'pt', n:'البرتغال', f:'🇵🇹' }, { k:'br', n:'البرازيل', f:'🇧🇷' },
+    { k:'de', n:'ألمانيا', f:'🇩🇪' }, { k:'nl', n:'هولندا', f:'🇳🇱' }
+  ];
+  var L = window.LIVE_INIT();
+  var bars = document.getElementById('bars'), totalEl = document.getElementById('total');
+  if (!L.ready) { bars.innerHTML = '<div class="empty">بانتظار إعداد Firebase في <b>live-config.js</b></div>'; return; }
+  bars.innerHTML = '<div class="empty">لا توقّعات بعد — افتحوا رابط التوقّع على جوّالكم وابدؤوا!</div>';
+
+  // Organizer-only reset (shown only when the board is opened with ?admin=1,
+  // which the deck does for its embedded copy; the public URL never shows it).
+  var admin = new URLSearchParams(location.search).get('admin') === '1';
+  var rb = document.getElementById('reset');
+  if (admin && rb) {
+    rb.style.display = '';
+    rb.addEventListener('click', function () {
+      if (!confirm('تصفير كل التوقّعات في هذه الغرفة؟ لا يمكن التراجع.')) return;
+      L.db.collection('rooms').doc(L.room).collection('votes').get().then(function (s) {
+        var batch = L.db.batch(); s.forEach(function (d) { batch.delete(d.ref); }); return batch.commit();
+      }).catch(function (e) { alert('تعذّر التصفير: ' + e.message); });
+    });
+  }
+
+  L.db.collection('rooms').doc(L.room).collection('votes').onSnapshot(function (snap) {
+    var tally = {}, total = 0; TEAMS.forEach(function (t) { tally[t.k] = 0; });
+    snap.forEach(function (d) { var k = d.data().team; if (k in tally) { tally[k]++; total++; } });
+    totalEl.textContent = total ? ('إجمالي التوقّعات: ' + total) : '';
+    if (!total) { bars.innerHTML = '<div class="empty">لا توقّعات بعد — افتحوا رابط التوقّع على جوّالكم وابدؤوا!</div>'; return; }
+    var max = 1; TEAMS.forEach(function (t) { if (tally[t.k] > max) max = tally[t.k]; });
+    var rows = TEAMS.slice().sort(function (a, b) { return tally[b.k] - tally[a.k]; });
+    var leadVal = tally[rows[0].k];
+    bars.innerHTML = rows.map(function (t) {
+      var lead = tally[t.k] === leadVal && leadVal > 0 ? ' lead' : '';
+      return '<div class="row' + lead + '"><span class="nm">' + t.f + ' ' + t.n + '</span>' +
+        '<div class="track"><div class="fill" style="width:' + (tally[t.k] / max * 100) + '%"></div></div>' +
+        '<span class="val">' + tally[t.k] + '</span></div>';
+    }).join('');
+  });
+})();
+</script>
+</body>
+</html>
