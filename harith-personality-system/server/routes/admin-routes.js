@@ -293,17 +293,164 @@ router.post('/results/:id/grant', (req, res) => {
   }
 });
 
+// ========== حذف نتيجة (وما يتبعها) ==========
+
+// POST /api/admin/results/:id/delete
+router.post('/results/:id/delete', (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const result = db.get(
+      `SELECT r.id, r.invitation_id, i.created_by
+       FROM test_results r
+       JOIN test_invitations i ON i.id = r.invitation_id
+       WHERE r.id = ?`,
+      [id]
+    );
+    if (!result) return res.status(404).json({ error: 'نتيجة غير موجودة' });
+
+    // فقط المؤسس أو منشئ الدعوة يحذف
+    if (req.user.role !== 'founder' && result.created_by !== req.user.id) {
+      return res.status(403).json({ error: 'لا تملك صلاحية حذف هذه النتيجة' });
+    }
+
+    db.run(`DELETE FROM access_grants WHERE result_id = ?`, [id]);
+    db.run(`DELETE FROM test_sessions WHERE invitation_id = ?`, [result.invitation_id]);
+    db.run(`DELETE FROM test_results WHERE id = ?`, [id]);
+    db.run(`DELETE FROM test_invitations WHERE id = ?`, [result.invitation_id]);
+
+    auth.logAction(req.user.id, 'result_deleted', 'result', id, null, req.ip);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[delete result]', err);
+    res.status(500).json({ error: 'خطأ في الحذف' });
+  }
+});
+
+// ========== إعادة الاختبار (دعوة جديدة لنفس المرشّح ونفس النوع) ==========
+
+// POST /api/admin/results/:id/redo
+router.post('/results/:id/redo', (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const result = db.get(
+      `SELECT r.candidate_id, r.test_id, i.created_by, i.allow_pause_resume,
+              c.full_name AS candidate_name, c.email AS candidate_email
+       FROM test_results r
+       JOIN test_invitations i ON i.id = r.invitation_id
+       JOIN candidates c ON c.id = r.candidate_id
+       WHERE r.id = ?`,
+      [id]
+    );
+    if (!result) return res.status(404).json({ error: 'نتيجة غير موجودة' });
+    if (req.user.role !== 'founder' && result.created_by !== req.user.id) {
+      return res.status(403).json({ error: 'لا تملك صلاحية إعادة هذا الاختبار' });
+    }
+
+    const token = db.generateToken();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const inv = db.run(
+      `INSERT INTO test_invitations
+       (token, candidate_id, test_id, allow_pause_resume, created_by, expires_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [token, result.candidate_id, result.test_id, result.allow_pause_resume ? 1 : 0, req.user.id, expiresAt]
+    );
+
+    auth.logAction(req.user.id, 'test_redo', 'invitation', inv.lastId, `from_result=${id}`, req.ip);
+
+    const link = `${req.protocol}://${req.get('host')}/t/${token}`;
+    res.json({
+      success: true,
+      invitation: {
+        id: inv.lastId, token, link,
+        candidate_name: result.candidate_name,
+        candidate_email: result.candidate_email,
+        test_id: result.test_id,
+        expires_at: expiresAt,
+        status: 'pending'
+      }
+    });
+  } catch (err) {
+    console.error('[redo]', err);
+    res.status(500).json({ error: 'خطأ في إعادة الاختبار' });
+  }
+});
+
 // ========== قائمة المستخدمين (لاختيار من يُمنح) ==========
 
 // GET /api/admin/users
 router.get('/users', (req, res) => {
   try {
     const rows = db.all(
-      `SELECT id, email, full_name, role FROM users WHERE is_active = 1 ORDER BY role, full_name`
+      `SELECT id, email, full_name, role, last_login_at FROM users WHERE is_active = 1 ORDER BY role, full_name`
     );
     res.json({ users: rows });
   } catch (err) {
     console.error('[users]', err);
+    res.status(500).json({ error: 'خطأ' });
+  }
+});
+
+// ========== إضافة مستخدم جديد (المؤسس فقط) ==========
+
+// POST /api/admin/users  — body: { email, full_name, password, role }
+router.post('/users', async (req, res) => {
+  try {
+    if (req.user.role !== 'founder') {
+      return res.status(403).json({ error: 'إضافة المستخدمين تتطلّب صلاحيات المؤسس' });
+    }
+    const { email, full_name, password, role } = req.body || {};
+    if (!email || !full_name || !password) {
+      return res.status(400).json({ error: 'البريد والاسم وكلمة المرور مطلوبة' });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' });
+    }
+    const cleanEmail = email.toLowerCase().trim();
+    const roleClean = role === 'founder' ? 'founder' : 'admin';
+
+    const exists = db.get(`SELECT id FROM users WHERE email = ?`, [cleanEmail]);
+    if (exists) return res.status(400).json({ error: 'هذا البريد مستخدم مسبقاً' });
+
+    const hash = await auth.hashPassword(password);
+    const ins = db.run(
+      `INSERT INTO users (email, password_hash, full_name, role) VALUES (?, ?, ?, ?)`,
+      [cleanEmail, hash, full_name.trim(), roleClean]
+    );
+
+    auth.logAction(req.user.id, 'user_created', 'user', ins.lastId, `role=${roleClean}`, req.ip);
+    res.json({
+      success: true,
+      user: { id: ins.lastId, email: cleanEmail, full_name: full_name.trim(), role: roleClean }
+    });
+  } catch (err) {
+    console.error('[create user]', err);
+    res.status(500).json({ error: 'خطأ في إضافة المستخدم' });
+  }
+});
+
+// ========== تعطيل مستخدم (المؤسس فقط) ==========
+
+// POST /api/admin/users/:id/deactivate
+router.post('/users/:id/deactivate', (req, res) => {
+  try {
+    if (req.user.role !== 'founder') {
+      return res.status(403).json({ error: 'هذه العملية تتطلّب صلاحيات المؤسس' });
+    }
+    const id = parseInt(req.params.id);
+    if (id === req.user.id) {
+      return res.status(400).json({ error: 'لا يمكنك تعطيل حسابك الخاص' });
+    }
+    const target = db.get(`SELECT id, role FROM users WHERE id = ? AND is_active = 1`, [id]);
+    if (!target) return res.status(404).json({ error: 'المستخدم غير موجود' });
+    if (target.role === 'founder') {
+      return res.status(400).json({ error: 'لا يمكن تعطيل حساب مؤسس' });
+    }
+
+    db.run(`UPDATE users SET is_active = 0 WHERE id = ?`, [id]);
+    auth.logAction(req.user.id, 'user_deactivated', 'user', id, null, req.ip);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[deactivate user]', err);
     res.status(500).json({ error: 'خطأ' });
   }
 });

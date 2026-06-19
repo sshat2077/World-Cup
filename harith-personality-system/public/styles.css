@@ -1,18 +1,20 @@
 /* ================================================================
-   الهوية البصرية — الحارث السحيباني محامون ومستشارون
-   ملف تنسيق مشترك لجميع الواجهات (home / admin / take)
+   الهوية البصرية — نظام الشخصية
+   كحلي غامق + أزرق حيوي · ملف تنسيق مشترك (home / admin / take)
 ================================================================= */
 
 :root {
-  --primary: #0A5778;
-  --primary-dark: #074258;
-  --primary-light: #E8F1F5;
-  --secondary: #A89F8E;
-  --bg: #F5F3EF;
-  --alert: #FFF4E6;
-  --text: #2C2C2C;
-  --muted: #6B6B6B;
-  --border: #DDD7CE;
+  --navy: #15233B;          /* الكحلي الغامق — الرؤوس والأشرطة الداكنة */
+  --navy-light: #1E3253;
+  --primary: #2563EB;       /* الأزرق الحيوي — الأزرار والروابط */
+  --primary-dark: #1D4ED8;
+  --primary-light: #E8EEFB;
+  --secondary: #64748B;
+  --bg: #F4F6FA;
+  --alert: #FFF7E6;
+  --text: #1E293B;
+  --muted: #64748B;
+  --border: #E2E8F0;
   --card-bg: #FFFFFF;
 
   --success-bg: #E3F2E6;
@@ -47,7 +49,7 @@ a { color: var(--primary); }
 
 /* ===== الرأس ===== */
 .header {
-  background: var(--primary);
+  background: var(--navy);
   color: #fff;
   padding: 24px 20px;
   text-align: center;
@@ -182,7 +184,7 @@ tr:hover td { background: #fafafa; }
 .score-bar .percent { font-size: 13px; color: var(--muted); margin-top: 3px; }
 
 /* ===== رأس النتيجة ===== */
-.result-headline { text-align: center; padding: 28px; background: var(--primary); color: #fff; border-radius: var(--radius); margin-bottom: 18px; }
+.result-headline { text-align: center; padding: 28px; background: var(--navy); color: #fff; border-radius: var(--radius); margin-bottom: 18px; }
 .result-headline .type-code { font-size: 46px; font-weight: 800; letter-spacing: 2px; }
 .result-headline .type-name { font-size: 22px; margin-top: 6px; }
 .result-headline .tagline { font-size: 15px; opacity: .9; margin-top: 6px; }
@@ -218,7 +220,7 @@ ul.clean li { margin-bottom: 7px; }
   max-height: 90vh; overflow-y: auto;
 }
 .modal-head {
-  position: sticky; top: 0; background: var(--primary); color: #fff;
+  position: sticky; top: 0; background: var(--navy); color: #fff;
   padding: 16px 22px; display: flex; justify-content: space-between; align-items: center;
   border-radius: var(--radius) var(--radius) 0 0;
 }

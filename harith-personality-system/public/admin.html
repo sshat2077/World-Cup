@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>لوحة الإدارة — الحارث السحيباني محامون ومستشارون</title>
+  <title>لوحة الإدارة — نظام الشخصية</title>
   <link rel="stylesheet" href="/styles.css">
   <style>
-    .topbar { background: var(--primary); color:#fff; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
+    .topbar { background: var(--navy); color:#fff; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
     .topbar .brand { font-weight:700; }
     .topbar .user-box { display:flex; align-items:center; gap:12px; font-size:14px; }
     .role-chip { background: rgba(255,255,255,.2); padding:3px 10px; border-radius:20px; font-size:12px; }
@@ -29,8 +29,8 @@
     <div class="login-wrap">
       <div class="card">
         <img src="/logo.jpg" class="logo" alt="" onerror="this.style.display='none'">
-        <h2 class="center">لوحة إدارة نظام الشخصية</h2>
-        <p class="center muted" style="font-size:13px;margin-bottom:18px;">الحارث السحيباني محامون ومستشارون</p>
+        <h2 class="center">نظام الشخصية</h2>
+        <p class="center muted" style="font-size:13px;margin-bottom:18px;">لوحة الإدارة</p>
         <div id="login-error" class="alert alert-error hidden"></div>
         <form id="login-form">
           <div class="form-group">
@@ -51,7 +51,7 @@
   <!-- ============ لوحة التحكّم ============ -->
   <div id="view-dashboard" class="hidden">
     <div class="topbar">
-      <div class="brand">نظام تحليل شخصية الموظفين</div>
+      <div class="brand">نظام الشخصية</div>
       <div class="user-box">
         <span id="user-name"></span>
         <span class="role-chip" id="user-role"></span>
@@ -155,13 +155,47 @@
         </div>
       </div>
 
-      <!-- تبويب: الصلاحيات -->
+      <!-- تبويب: الصلاحيات والمستخدمون -->
       <div class="tab-panel" id="panel-permissions">
         <div class="card">
-          <h2>إدارة الصلاحيات</h2>
-          <p class="muted">لمنح مستخدم صلاحية الاطلاع على نتيجة معيّنة: افتح النتيجة من تبويب «النتائج» ثم اضغط «منح الاطلاع».</p>
-          <h3 style="margin-top:16px;">المستخدمون</h3>
-          <div id="users-content"></div>
+          <h2>إضافة مستخدم جديد</h2>
+          <p class="muted" style="font-size:14px;">أنشئ حساباً جديداً وحدّد صلاحيته. المستخدم الجديد يستطيع الدخول بالبريد وكلمة المرور التي تحدّدها له.</p>
+          <div id="adduser-error" class="alert alert-error hidden" style="margin-top:12px;"></div>
+          <div id="adduser-success" class="alert alert-success hidden" style="margin-top:12px;"></div>
+          <form id="adduser-form" style="margin-top:12px;">
+            <div class="grid grid-2">
+              <div class="form-group">
+                <label>الاسم الكامل *</label>
+                <input type="text" id="u-name" required>
+              </div>
+              <div class="form-group">
+                <label>البريد الإلكتروني *</label>
+                <input type="email" id="u-email" required dir="ltr" style="text-align:left;">
+              </div>
+              <div class="form-group">
+                <label>كلمة المرور *</label>
+                <input type="text" id="u-password" required>
+                <p class="field-hint">8 أحرف على الأقل. أبلغ المستخدم بها ليغيّرها لاحقاً.</p>
+              </div>
+              <div class="form-group">
+                <label>الصلاحية *</label>
+                <select id="u-role">
+                  <option value="admin">مدير — يرى ما أنشأه + ما مُنح له</option>
+                  <option value="founder">مؤسس — صلاحية كاملة على كل شيء</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" id="adduser-btn">إضافة المستخدم</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="row-between">
+            <h2 class="mb-0">المستخدمون</h2>
+            <button class="btn-secondary btn-sm" onclick="loadUsers()">🔄 تحديث</button>
+          </div>
+          <p class="muted" style="font-size:13px;margin-top:8px;">لمنح مستخدم صلاحية الاطلاع على نتيجة معيّنة: من تبويب «النتائج» اضغط «منح اطلاع».</p>
+          <div id="users-content" style="margin-top:12px;"></div>
         </div>
       </div>
 
@@ -396,26 +430,61 @@
   }
 
   // ---------- النتائج ----------
+  let resultsById = {};
   async function loadResults() {
     const box = $('results-content');
     box.innerHTML = '<div class="spinner"></div>';
     const r = await api('/admin/results');
     if (!r.ok) { box.innerHTML = `<div class="alert alert-error">${esc(r.data.error || 'خطأ')}</div>`; return; }
     const rows = r.data.results || [];
+    resultsById = {};
+    rows.forEach(res => resultsById[res.id] = res);
     if (!rows.length) { box.innerHTML = '<div class="empty">لا توجد نتائج مكتملة بعد.</div>'; return; }
 
     box.innerHTML = `<div class="table-wrap"><table>
       <thead><tr>
-        <th>المرشّح</th><th>النوع</th><th>الرمز</th><th>التاريخ</th><th>أنشأها</th><th>إجراء</th>
+        <th>المرشّح</th><th>النوع</th><th>الرمز</th><th>التاريخ</th><th>الإجراءات</th>
       </tr></thead><tbody>${rows.map(res => `
         <tr>
           <td>${esc(res.candidate_name)}<br><span class="muted" style="font-size:12px;">${esc(res.candidate_email)}</span></td>
           <td>${TEST_AR[res.test_id] || res.test_id}</td>
           <td><code>${esc(res.short_code || '—')}</code></td>
           <td style="white-space:nowrap;">${fmtDate(res.computed_at)}</td>
-          <td>${esc(res.created_by_name || '—')}</td>
-          <td><button class="btn-sm" onclick="viewResult(${res.id})">عرض تفصيلي</button></td>
+          <td style="white-space:nowrap;">
+            <button class="btn-sm" onclick="viewResult(${res.id})">عرض</button>
+            <button class="btn-secondary btn-sm" onclick="grantFromRow(${res.id})">منح اطلاع</button>
+            <button class="btn-secondary btn-sm" onclick="redoResult(${res.id})">إعادة</button>
+            <button class="btn-danger btn-sm" onclick="deleteResult(${res.id})">حذف</button>
+          </td>
         </tr>`).join('')}</tbody></table></div>`;
+  }
+
+  // فتح نافذة المنح من صفّ النتائج
+  function grantFromRow(id) {
+    const res = resultsById[id];
+    openGrant(id, res ? res.candidate_name : '');
+  }
+
+  // إعادة الاختبار — يولّد رابطاً جديداً لنفس المرشّح
+  async function redoResult(id) {
+    const res = resultsById[id];
+    const name = res ? res.candidate_name : '';
+    if (!confirm(`إعادة الاختبار لـ «${name}»؟ سيُولَّد رابط جديد صالح 7 أيام (النتيجة الحالية تبقى كما هي).`)) return;
+    const r = await api(`/admin/results/${id}/redo`, { method: 'POST' });
+    if (!r.ok) return alert(r.data.error || 'تعذّرت إعادة الاختبار');
+    const link = r.data.invitation.link;
+    prompt('تمّ توليد رابط جديد للإعادة — انسخه وأرسله للمرشّح:', link);
+    switchTab('invitations');
+  }
+
+  // حذف النتيجة (والدعوة المرتبطة بها)
+  async function deleteResult(id) {
+    const res = resultsById[id];
+    const name = res ? res.candidate_name : '';
+    if (!confirm(`حذف نتيجة «${name}» نهائياً؟ لا يمكن التراجع.`)) return;
+    const r = await api(`/admin/results/${id}/delete`, { method: 'POST' });
+    if (!r.ok) return alert(r.data.error || 'تعذّر الحذف');
+    loadResults();
   }
 
   // ---------- عرض النتيجة التفصيلية ----------
@@ -575,13 +644,48 @@
     const r = await api('/admin/users');
     if (!r.ok) { box.innerHTML = `<div class="alert alert-error">${esc(r.data.error || 'خطأ')}</div>`; return; }
     const users = r.data.users || [];
+    const isFounder = currentUser && currentUser.role === 'founder';
     box.innerHTML = `<div class="table-wrap"><table>
-      <thead><tr><th>الاسم</th><th>البريد</th><th>الدور</th></tr></thead>
+      <thead><tr><th>الاسم</th><th>البريد</th><th>الدور</th><th>آخر دخول</th>${isFounder ? '<th>إجراء</th>' : ''}</tr></thead>
       <tbody>${users.map(u => `<tr>
         <td>${esc(u.full_name)}</td><td dir="ltr" style="text-align:left;">${esc(u.email)}</td>
         <td><span class="role-chip" style="background:var(--primary-light);color:var(--primary);">${ROLE_AR[u.role] || u.role}</span></td>
+        <td style="white-space:nowrap;font-size:13px;">${u.last_login_at ? fmtDate(u.last_login_at) : 'لم يدخل بعد'}</td>
+        ${isFounder ? `<td>${(u.id !== currentUser.id && u.role !== 'founder')
+          ? `<button class="btn-danger btn-sm" onclick="deactivateUser(${u.id}, '${esc(u.full_name)}')">تعطيل</button>`
+          : '<span class="muted">—</span>'}</td>` : ''}
       </tr>`).join('')}</tbody></table></div>`;
   }
+
+  async function deactivateUser(id, name) {
+    if (!confirm(`تعطيل المستخدم «${name}»؟ لن يستطيع الدخول بعد ذلك.`)) return;
+    const r = await api(`/admin/users/${id}/deactivate`, { method: 'POST' });
+    if (!r.ok) return alert(r.data.error || 'تعذّر التعطيل');
+    loadUsers();
+  }
+
+  // ---------- إضافة مستخدم جديد ----------
+  $('adduser-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    hide($('adduser-error')); hide($('adduser-success'));
+    const btn = $('adduser-btn');
+    btn.disabled = true; btn.textContent = 'جارٍ الإضافة…';
+    const r = await api('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify({
+        full_name: $('u-name').value.trim(),
+        email: $('u-email').value.trim(),
+        password: $('u-password').value,
+        role: $('u-role').value
+      })
+    });
+    btn.disabled = false; btn.textContent = 'إضافة المستخدم';
+    if (!r.ok) return showErr($('adduser-error'), r.data.error || 'تعذّرت الإضافة');
+    $('adduser-success').textContent = `✓ تمّت إضافة «${r.data.user.full_name}» (${ROLE_AR[r.data.user.role]}).`;
+    $('adduser-success').classList.remove('hidden');
+    $('adduser-form').reset();
+    loadUsers();
+  });
 
   // ---------- تغيير كلمة المرور ----------
   function openPwModal() {
