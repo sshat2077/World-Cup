@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نظام تحليل شخصية الموظفين — الحارث السحيباني محامون ومستشارون</title>
+  <style>
+    /* ================================================================
+       الهوية البصرية للحارث السحيباني محامون ومستشارون
+       ================================================================
+       الأزرق الأساسي: #0A5778
+       البيج الثانوي:  #A89F8E
+       الخلفية الفاتحة: #F5F3EF
+       الإطار:          #E8F1F5
+       التنبيه:         #FFF4E6
+       الخط:            Arial
+    ================================================================= */
+
+    :root {
+      --primary: #0A5778;
+      --primary-dark: #074258;
+      --primary-light: #E8F1F5;
+      --secondary: #A89F8E;
+      --bg: #F5F3EF;
+      --alert: #FFF4E6;
+      --text: #2C2C2C;
+      --muted: #6B6B6B;
+      --border: #DDD7CE;
+      --success-bg: #E3F2E6;
+      --success-border: #2E7D32;
+      --weakness-bg: #FDEBEB;
+      --weakness-border: #C62828;
+      --opportunity-bg: #E3F1FB;
+      --opportunity-border: #1565C0;
+      --threat-bg: #FFF4E0;
+      --threat-border: #E65100;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, 'Tahoma', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    /* الرأس */
+    .header {
+      background: var(--primary);
+      color: white;
+      padding: 30px 20px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .header h1 {
+      font-size: 26px;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+    .header .subtitle {
+      font-size: 14px;
+      opacity: 0.9;
+      font-weight: normal;
+    }
+
+    /* الحاوية الرئيسية */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 30px 20px;
+    }
+
+    /* البطاقات */
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 30px;
+      margin-bottom: 25px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border: 1px solid var(--border);
+    }
+
+    .card h2 {
+      color: var(--primary);
+      font-size: 22px;
+      margin-bottom: 15px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--primary-light);
+    }
+
+    .card h3 {
+      color: var(--primary-dark);
+      font-size: 18px;
+      margin: 20px 0 10px;
+    }
+
+    .card p {
+      margin-bottom: 12px;
+    }
+
+    /* اختيار الاختبار */
+    .test-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .test-option {
+      background: white;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 25px 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .test-option:hover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      transform: translateY(-2px);
+    }
+    .test-option .icon {
+      font-size: 36px;
+      margin-bottom: 10px;
+      display: block;
+    }
+    .test-option .name {
+      font-size: 17px;
+      font-weight: bold;
+      color: var(--primary);
+      margin-bottom: 5px;
+    }
+    .test-option .desc {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* الأزرار */
+    button, .btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 15px;
+      font-family: inherit;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+    button:hover, .btn:hover {
+      background: var(--primary-dark);
+    }
+    button:disabled {
+      background: var(--muted);
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: transparent;
+      color: var(--primary);
+      border: 2px solid var(--primary);
+    }
+    .btn-secondary:hover {
+      background: var(--primary-light);
+    }
+
+    /* شاشة الأسئلة */
+    .progress-bar {
+      background: var(--border);
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 5px;
+    }
+    .progress-bar .fill {
+      background: var(--primary);
+      height: 100%;
+      transition: width 0.3s;
+    }
+    .progress-text {
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 25px;
+    }
+
+    .question-card {
+      background: white;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border: 1px solid var(--border);
+    }
+    .question-number {
+      color: var(--primary);
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .question-text {
+      font-size: 19px;
+      line-height: 1.6;
+      margin-bottom: 25px;
+      color: var(--text);
+    }
+
+    .answer-options {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+    .answer-option {
+      background: white;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 15px 5px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+      font-size: 13px;
+    }
+    .answer-option:hover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+    .answer-option.selected {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    .answer-option .number {
+      display: block;
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 25px;
+      gap: 10px;
+    }
+
+    /* شاشة النتيجة */
+    .result-headline {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      margin-bottom: 25px;
+    }
+    .result-headline .type-code {
+      font-size: 48px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      letter-spacing: 3px;
+    }
+    .result-headline .type-name {
+      font-size: 22px;
+      margin-bottom: 10px;
+    }
+    .result-headline .tagline {
+      font-size: 16px;
+      opacity: 0.9;
+    }
+
+    /* شريط النسب */
+    .score-bar {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      gap: 10px;
+    }
+    .score-bar .label {
+      width: 140px;
+      font-weight: bold;
+      color: var(--primary);
+    }
+    .score-bar .bar-container {
+      flex: 1;
+      background: var(--border);
+      height: 24px;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+    .score-bar .bar-fill {
+      background: linear-gradient(90deg, var(--primary-dark), var(--primary));
+      height: 100%;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      color: white;
+      font-weight: bold;
+      font-size: 13px;
+      transition: width 0.8s ease-out;
+    }
+    .score-bar .percent {
+      font-weight: bold;
+      color: var(--primary);
+      width: 50px;
+      text-align: left;
+    }
+
+    /* نقاط القوة */
+    .strength-list {
+      list-style: none;
+      padding: 0;
+    }
+    .strength-list li {
+      background: var(--primary-light);
+      padding: 12px 15px;
+      margin-bottom: 8px;
+      border-radius: 6px;
+      border-right: 4px solid var(--primary);
+    }
+
+    /* تنبيه التعادل */
+    .tie-alert {
+      background: var(--alert);
+      border-right: 4px solid #E65100;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+
+    /* الحالات: مخفي وظاهر */
+    .hidden { display: none; }
+
+    /* رسالة الخطأ */
+    .error-msg {
+      background: var(--weakness-bg);
+      color: var(--weakness-border);
+      padding: 15px;
+      border-radius: 6px;
+      border-right: 4px solid var(--weakness-border);
+      margin: 15px 0;
+    }
+
+    /* التذييل */
+    .footer {
+      text-align: center;
+      padding: 20px;
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 30px;
+    }
+
+    /* الاستجابة للجوال */
+    @media (max-width: 600px) {
+      .answer-options { grid-template-columns: 1fr 1fr; }
+      .question-text { font-size: 17px; }
+      .result-headline .type-code { font-size: 36px; }
+      .score-bar { flex-wrap: wrap; }
+      .score-bar .label { width: 100%; margin-bottom: 5px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <h1>نظام تحليل شخصية الموظفين</h1>
+  <div class="subtitle">الحارث السحيباني محامون ومستشارون · نموذج تجريبي</div>
+</header>
+
+<div class="container">
+
+  <!-- شاشة 1: اختيار الاختبار -->
+  <div id="screen-selection">
+    <div class="card">
+      <h2>مرحباً بك</h2>
+      <p>اختر الاختبار الذي تريد إجراءه. يمكنك إكمال اختبار واحد في كل جلسة.</p>
+
+      <div class="test-options" id="test-options-container">
+        <!-- تُملأ من API -->
+      </div>
+    </div>
+  </div>
+
+  <!-- شاشة 2: الأسئلة -->
+  <div id="screen-questions" class="hidden">
+    <div class="card">
+      <div class="progress-bar">
+        <div class="fill" id="progress-fill" style="width: 0%"></div>
+      </div>
+      <div class="progress-text" id="progress-text">السؤال 1 من 0</div>
+
+      <div class="question-card">
+        <div class="question-number" id="question-number">السؤال ١</div>
+        <div class="question-text" id="question-text">...</div>
+
+        <div class="answer-options" id="answer-options">
+          <!-- تُملأ ديناميكياً -->
+        </div>
+
+        <div class="nav-buttons">
+          <button id="btn-prev" class="btn-secondary">← السابق</button>
+          <button id="btn-next">التالي →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- شاشة 3: التحميل -->
+  <div id="screen-loading" class="hidden">
+    <div class="card" style="text-align: center; padding: 60px 30px;">
+      <h2>جارٍ تحليل الإجابات...</h2>
+      <p style="color: var(--muted); margin-top: 15px;">يرجى الانتظار لحظات</p>
+    </div>
+  </div>
+
+  <!-- شاشة 4: النتيجة -->
+  <div id="screen-result" class="hidden">
+    <div id="result-content">
+      <!-- تُملأ ديناميكياً حسب الاختبار -->
+    </div>
+
+    <div style="text-align: center; margin-top: 30px;">
+      <button id="btn-restart">🔄 بدء اختبار جديد</button>
+    </div>
+  </div>
+
+  <!-- شاشة الخطأ -->
+  <div id="screen-error" class="hidden">
+    <div class="card">
+      <h2 style="color: var(--weakness-border)">حدث خطأ</h2>
+      <div class="error-msg" id="error-message">...</div>
+      <button id="btn-error-back">العودة للرئيسية</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  © الحارث السحيباني محامون ومستشارون — نموذج تجريبي ٠.١
+</div>
+
+<script>
+  // ==================================================================
+  // التطبيق — Single Page App بسيط
+  // ==================================================================
+
+  const state = {
+    testId: null,
+    questions: [],
+    answers: {},   // { questionId: answerValue }
+    currentIndex: 0,
+    scaleLabels: null
+  };
+
+  // عناصر الشاشات
+  const screens = {
+    selection: document.getElementById('screen-selection'),
+    questions: document.getElementById('screen-questions'),
+    loading:   document.getElementById('screen-loading'),
+    result:    document.getElementById('screen-result'),
+    error:     document.getElementById('screen-error')
+  };
+
+  function showScreen(name) {
+    Object.keys(screens).forEach(k => screens[k].classList.add('hidden'));
+    screens[name].classList.remove('hidden');
+    window.scrollTo(0, 0);
+  }
+
+  // ==================================================================
+  // 1. شاشة الاختيار
+  // ==================================================================
+
+  async function loadTestsList() {
+    try {
+      const res = await fetch('/api/tests');
+      const data = await res.json();
+      const container = document.getElementById('test-options-container');
+      container.innerHTML = '';
+
+      const icons = { 'mbti': '🎯', 'bigfive': '📊', 'disc': '🧭' };
+
+      data.tests.forEach(t => {
+        const div = document.createElement('div');
+        div.className = 'test-option';
+        div.innerHTML = `
+          <span class="icon">${icons[t.test_id] || '📝'}</span>
+          <div class="name">${t.display_name_ar}</div>
+          <div class="desc">الوقت المتوقّع: ${t.estimated_minutes} دقيقة</div>
+        `;
+        div.addEventListener('click', () => startTest(t.test_id));
+        container.appendChild(div);
+      });
+    } catch (err) {
+      showError('تعذّر تحميل قائمة الاختبارات: ' + err.message);
+    }
+  }
+
+  // ==================================================================
+  // 2. شاشة الأسئلة
+  // ==================================================================
+
+  async function startTest(testId) {
+    try {
+      showScreen('loading');
+      const res = await fetch('/api/test/' + testId + '/questions');
+      if (!res.ok) throw new Error('فشل تحميل الأسئلة');
+      const data = await res.json();
+
+      state.testId = testId;
+      state.questions = data.questions;
+      state.answers = {};
+      state.currentIndex = 0;
+      state.scaleLabels = data.scale_ar;
+
+      renderCurrentQuestion();
+      showScreen('questions');
+    } catch (err) {
+      showError('تعذّر بدء الاختبار: ' + err.message);
+    }
+  }
+
+  function renderCurrentQuestion() {
+    const q = state.questions[state.currentIndex];
+    const total = state.questions.length;
+    const current = state.currentIndex + 1;
+
+    // شريط التقدّم
+    document.getElementById('progress-fill').style.width = (current / total * 100) + '%';
+    document.getElementById('progress-text').textContent = `السؤال ${current} من ${total}`;
+
+    // السؤال
+    document.getElementById('question-number').textContent = `السؤال ${current}`;
+    document.getElementById('question-text').textContent = q.text;
+
+    // الخيارات
+    const optionsContainer = document.getElementById('answer-options');
+    optionsContainer.innerHTML = '';
+    [1, 2, 3, 4, 5].forEach(n => {
+      const div = document.createElement('div');
+      div.className = 'answer-option';
+      if (state.answers[q.id] === n) div.classList.add('selected');
+      div.innerHTML = `
+        <span class="number">${n}</span>
+        <span>${state.scaleLabels[n]}</span>
+      `;
+      div.addEventListener('click', () => selectAnswer(q.id, n));
+      optionsContainer.appendChild(div);
+    });
+
+    // الأزرار
+    document.getElementById('btn-prev').disabled = (state.currentIndex === 0);
+    const nextBtn = document.getElementById('btn-next');
+    nextBtn.textContent = (state.currentIndex === total - 1) ? '✓ إنهاء الاختبار' : 'التالي →';
+    nextBtn.disabled = !(q.id in state.answers);
+  }
+
+  function selectAnswer(qId, value) {
+    state.answers[qId] = value;
+    renderCurrentQuestion();
+  }
+
+  document.getElementById('btn-prev').addEventListener('click', () => {
+    if (state.currentIndex > 0) {
+      state.currentIndex--;
+      renderCurrentQuestion();
+    }
+  });
+
+  document.getElementById('btn-next').addEventListener('click', () => {
+    if (state.currentIndex < state.questions.length - 1) {
+      state.currentIndex++;
+      renderCurrentQuestion();
+    } else {
+      submitAnswers();
+    }
+  });
+
+  // ==================================================================
+  // 3. تسليم الإجابات والحصول على النتيجة
+  // ==================================================================
+
+  async function submitAnswers() {
+    try {
+      showScreen('loading');
+
+      const answersArray = Object.entries(state.answers).map(([id, answer]) => ({
+        id: parseInt(id),
+        answer: answer
+      }));
+
+      const res = await fetch('/api/test/' + state.testId + '/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers: answersArray })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'خطأ في الحساب');
+      }
+
+      renderResult(data);
+      showScreen('result');
+    } catch (err) {
+      showError('تعذّر حساب النتيجة: ' + err.message);
+    }
+  }
+
+  // ==================================================================
+  // 4. عرض النتيجة حسب نوع الاختبار
+  // ==================================================================
+
+  function renderResult(data) {
+    const container = document.getElementById('result-content');
+
+    if (data.test_id === 'mbti') {
+      container.innerHTML = renderMBTIResult(data);
+    } else if (data.test_id === 'disc') {
+      container.innerHTML = renderDISCResult(data);
+    } else if (data.test_id === 'bigfive') {
+      container.innerHTML = renderBigFiveResult(data);
+    } else {
+      container.innerHTML = '<div class="card"><h2>نتيجة غير متوقّعة</h2><pre>' +
+        JSON.stringify(data, null, 2) + '</pre></div>';
+    }
+
+    // تحريك شرائط النسب بعد الرسم
+    setTimeout(() => {
+      document.querySelectorAll('.bar-fill').forEach(el => {
+        const target = el.getAttribute('data-target') + '%';
+        el.style.width = target;
+      });
+    }, 100);
+  }
+
+  function renderMBTIResult(data) {
+    const profile = data.type_profile;
+    const tieAlert = data.has_ties
+      ? `<div class="tie-alert">⚠️ <strong>تنبيه:</strong> يوجد تعادل في المحاور التالية: ${data.tied_axes.join('، ')}. استخدم الدرجة الافتراضية.</div>`
+      : '';
+
+    let axesHtml = '';
+    Object.entries(data.preferences).forEach(([axis, p]) => {
+      const label = p.axis_name_ar;
+      axesHtml += `
+        <div class="score-bar">
+          <div class="label">${label}</div>
+          <div class="bar-container">
+            <div class="bar-fill" data-target="${p.strength_percent}">
+              ${p.chosen_pole} — ${p.strength.label_ar}
+            </div>
+          </div>
+          <div class="percent">${p.strength_percent}%</div>
+        </div>
+      `;
+    });
+
+    const summary = profile.summary_for_employee || {};
+    let strengthsHtml = '';
+    if (summary.top_strengths_ar) {
+      strengthsHtml = summary.top_strengths_ar.map(s => `<li>${s}</li>`).join('');
+    }
+
+    return `
+      <div class="result-headline">
+        <div class="type-code">${data.type_code}</div>
+        <div class="type-name">${profile.type_name_ar || ''}</div>
+        <div class="tagline">${profile.type_tagline_ar || ''}</div>
+      </div>
+
+      ${tieAlert}
+
+      <div class="card">
+        <h2>ملخّص شخصيتك</h2>
+        <p>${summary.short_description_ar || profile.summary_ar || ''}</p>
+      </div>
+
+      <div class="card">
+        <h2>أقطاب الشخصية الأربعة</h2>
+        ${axesHtml}
+      </div>
+
+      ${strengthsHtml ? `
+      <div class="card">
+        <h2>أبرز نقاط قوّتك</h2>
+        <ul class="strength-list">${strengthsHtml}</ul>
+      </div>
+      ` : ''}
+
+      <div class="card" style="background: var(--alert)">
+        <h3 style="color: var(--primary)">📬 ملاحظة</h3>
+        <p>التقرير التفصيلي الكامل (بما في ذلك تحليل SWOT، توصيات الإدارة، وتوصيات الشركاء) سيُرسَل إلى الإدارة.</p>
+      </div>
+    `;
+  }
+
+  function renderDISCResult(data) {
+    const profile = data.primary_profile;
+    const tieAlert = data.primary_tie
+      ? `<div class="tie-alert">⚠️ <strong>تنبيه:</strong> تعادل في المركز الأول بين ${data.primary_style} و ${data.secondary_style}.</div>`
+      : '';
+
+    let rankingHtml = '';
+    data.ranking.forEach(r => {
+      rankingHtml += `
+        <div class="score-bar">
+          <div class="label">${r.style_code} — ${r.style_name_ar}</div>
+          <div class="bar-container">
+            <div class="bar-fill" data-target="${r.percent}">${r.short_ar}</div>
+          </div>
+          <div class="percent">${r.percent}%</div>
+        </div>
+      `;
+    });
+
+    const summary = profile.summary_for_employee || {};
+    const strengthsHtml = (summary.top_strengths_ar || [])
+      .map(s => `<li>${s}</li>`).join('');
+
+    const secondaryHtml = data.secondary_style
+      ? `<p><strong>النمط الثانوي:</strong> ${data.secondary_style} — ${data.secondary_profile.style_name_ar}</p>`
+      : '<p>نمطك الأساسي مُهيمن — لا يوجد نمط ثانوي بارز.</p>';
+
+    return `
+      <div class="result-headline">
+        <div class="type-code">${data.compound_code}</div>
+        <div class="type-name">${profile.style_name_ar}</div>
+        <div class="tagline">${profile.tagline_ar}</div>
+      </div>
+
+      ${tieAlert}
+
+      <div class="card">
+        <h2>ملخّص نمطك السلوكي</h2>
+        <p>${summary.short_description_ar || ''}</p>
+        ${secondaryHtml}
+        <p><strong>قوّة النمط الأساسي:</strong> ${data.dominance.label_ar} — ${data.dominance.description_ar}</p>
+      </div>
+
+      <div class="card">
+        <h2>ترتيب الأنماط الأربعة</h2>
+        ${rankingHtml}
+      </div>
+
+      ${strengthsHtml ? `
+      <div class="card">
+        <h2>أبرز نقاط قوّتك</h2>
+        <ul class="strength-list">${strengthsHtml}</ul>
+      </div>
+      ` : ''}
+
+      <div class="card" style="background: var(--alert)">
+        <h3 style="color: var(--primary)">📬 ملاحظة</h3>
+        <p>التقرير التفصيلي الكامل سيُرسَل إلى الإدارة.</p>
+      </div>
+    `;
+  }
+
+  function renderBigFiveResult(data) {
+    let dimensionsHtml = '';
+    data.dimension_reports.forEach(r => {
+      const reverseNote = r.score.is_reverse_scored
+        ? '<span style="font-size:12px;color:var(--muted)"> 🔄 (معكوس)</span>'
+        : '';
+      dimensionsHtml += `
+        <div class="score-bar">
+          <div class="label">${r.dimension_code} — ${r.dimension_name_ar}${reverseNote}</div>
+          <div class="bar-container">
+            <div class="bar-fill" data-target="${r.score.percent}">${r.interpretation.level_label_ar}</div>
+          </div>
+          <div class="percent">${r.score.percent}%</div>
+        </div>
+      `;
+    });
+
+    let detailsHtml = '';
+    data.dimension_reports.forEach(r => {
+      detailsHtml += `
+        <div class="card">
+          <h3>${r.dimension_code} — ${r.dimension_name_ar} (${r.score.percent}%)</h3>
+          <p style="color: var(--primary); font-weight: bold; margin-bottom: 10px;">
+            ${r.interpretation.headline_ar}
+          </p>
+          <p>${r.interpretation.short_description_ar}</p>
+        </div>
+      `;
+    });
+
+    return `
+      <div class="result-headline">
+        <div class="type-code" style="font-size: 28px;">البروفايل</div>
+        <div class="type-name">${data.profile_code}</div>
+        <div class="tagline">اختبار العوامل الخمسة الكبرى (Big Five)</div>
+      </div>
+
+      <div class="card">
+        <h2>نسبك في الأبعاد الخمسة</h2>
+        ${dimensionsHtml}
+      </div>
+
+      <div class="card">
+        <h2>تفسير الأبعاد</h2>
+        ${detailsHtml}
+      </div>
+
+      <div class="card" style="background: var(--alert)">
+        <h3 style="color: var(--primary)">📬 ملاحظة</h3>
+        <p>التقرير التفصيلي الكامل (بما في ذلك تحليل SWOT لكل بُعد، توصيات الشركاء، والتوصيات الإدارية) سيُرسَل إلى الإدارة.</p>
+      </div>
+    `;
+  }
+
+  // ==================================================================
+  // 5. الأخطاء
+  // ==================================================================
+
+  function showError(msg) {
+    document.getElementById('error-message').textContent = msg;
+    showScreen('error');
+  }
+
+  document.getElementById('btn-error-back').addEventListener('click', () => {
+    showScreen('selection');
+  });
+
+  document.getElementById('btn-restart').addEventListener('click', () => {
+    state.testId = null;
+    state.questions = [];
+    state.answers = {};
+    state.currentIndex = 0;
+    showScreen('selection');
+  });
+
+  // ==================================================================
+  // البدء
+  // ==================================================================
+
+  loadTestsList();
+
+</script>
+
+</body>
+</html>

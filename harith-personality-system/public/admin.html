@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة الإدارة — الحارث السحيباني محامون ومستشارون</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .topbar { background: var(--primary); color:#fff; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
+    .topbar .brand { font-weight:700; }
+    .topbar .user-box { display:flex; align-items:center; gap:12px; font-size:14px; }
+    .role-chip { background: rgba(255,255,255,.2); padding:3px 10px; border-radius:20px; font-size:12px; }
+    .login-wrap { max-width:400px; margin:60px auto; }
+    .login-wrap .logo { height:64px; display:block; margin:0 auto 16px; border-radius:8px; }
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+    .link-result { margin-top:16px; }
+    .empty { text-align:center; color:var(--muted); padding:30px; }
+    .rec-block { background:var(--primary-light); border-radius:10px; padding:14px; margin-bottom:12px; }
+    .rec-block h4 { color:var(--primary); margin-bottom:6px; }
+    .detail-section { margin-bottom:20px; }
+    .detail-section > h3 { border-right:4px solid var(--primary); padding-right:10px; }
+  </style>
+</head>
+<body>
+
+  <!-- ============ شاشة الدخول ============ -->
+  <div id="view-login">
+    <div class="login-wrap">
+      <div class="card">
+        <img src="/logo.jpg" class="logo" alt="" onerror="this.style.display='none'">
+        <h2 class="center">لوحة إدارة نظام الشخصية</h2>
+        <p class="center muted" style="font-size:13px;margin-bottom:18px;">الحارث السحيباني محامون ومستشارون</p>
+        <div id="login-error" class="alert alert-error hidden"></div>
+        <form id="login-form">
+          <div class="form-group">
+            <label>البريد الإلكتروني</label>
+            <input type="email" id="login-email" required autocomplete="username" dir="ltr" style="text-align:left;">
+          </div>
+          <div class="form-group">
+            <label>كلمة المرور</label>
+            <input type="password" id="login-password" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn-block" id="login-btn">تسجيل الدخول</button>
+        </form>
+      </div>
+      <p class="center"><a href="/">→ العودة للصفحة الرئيسية</a></p>
+    </div>
+  </div>
+
+  <!-- ============ لوحة التحكّم ============ -->
+  <div id="view-dashboard" class="hidden">
+    <div class="topbar">
+      <div class="brand">نظام تحليل شخصية الموظفين</div>
+      <div class="user-box">
+        <span id="user-name"></span>
+        <span class="role-chip" id="user-role"></span>
+        <button class="btn-secondary btn-sm" id="btn-change-pw">كلمة المرور</button>
+        <button class="btn-sm" id="btn-logout">خروج</button>
+      </div>
+    </div>
+
+    <div class="container">
+      <div id="pw-reminder" class="alert alert-warn hidden">
+        🔐 <strong>تنبيه أمني:</strong> أنت تستخدم كلمة المرور الافتراضية. يُنصَح بشدّة بتغييرها الآن.
+        <button class="btn-sm" style="margin-right:8px;" onclick="openPwModal()">تغييرها الآن</button>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="create">➕ إنشاء اختبار</button>
+        <button class="tab" data-tab="invitations">📋 قائمة الاختبارات</button>
+        <button class="tab" data-tab="results">📊 النتائج</button>
+        <button class="tab founder-only hidden" data-tab="permissions">🔑 إدارة الصلاحيات</button>
+      </div>
+
+      <!-- تبويب: إنشاء اختبار -->
+      <div class="tab-panel active" id="panel-create">
+        <div class="card">
+          <h2>إنشاء دعوة اختبار جديدة</h2>
+          <div id="create-error" class="alert alert-error hidden"></div>
+          <form id="create-form">
+            <div class="grid grid-2">
+              <div class="form-group">
+                <label>اسم المرشّح *</label>
+                <input type="text" id="c-name" required>
+              </div>
+              <div class="form-group">
+                <label>البريد الإلكتروني *</label>
+                <input type="email" id="c-email" required dir="ltr" style="text-align:left;">
+              </div>
+              <div class="form-group">
+                <label>رقم الهاتف (اختياري)</label>
+                <input type="text" id="c-phone" dir="ltr" style="text-align:left;">
+              </div>
+              <div class="form-group">
+                <label>ملاحظات (اختياري)</label>
+                <input type="text" id="c-notes">
+              </div>
+            </div>
+
+            <label style="margin-bottom:10px;display:block;">نوع الاختبار *</label>
+            <div class="grid grid-3" id="test-type-cards">
+              <div class="choice-card" data-test="mbti">
+                <span class="icon">🎯</span><div class="name">MBTI</div>
+                <div class="desc">الأنماط الـ16 · ~15 دقيقة</div>
+              </div>
+              <div class="choice-card" data-test="bigfive">
+                <span class="icon">📊</span><div class="name">Big Five</div>
+                <div class="desc">العوامل الخمسة · ~12 دقيقة</div>
+              </div>
+              <div class="choice-card" data-test="disc">
+                <span class="icon">🧭</span><div class="name">DISC</div>
+                <div class="desc">الأنماط السلوكية · ~8 دقائق</div>
+              </div>
+            </div>
+
+            <div class="checkbox-row" style="margin:18px 0;">
+              <input type="checkbox" id="c-pause" checked>
+              <label for="c-pause" style="margin:0;">السماح بإيقاف الاختبار وإكماله لاحقاً</label>
+            </div>
+
+            <button type="submit" id="create-btn">توليد رابط الاختبار</button>
+          </form>
+
+          <div id="link-result" class="link-result hidden">
+            <div class="alert alert-success">✓ تمّ إنشاء الدعوة بنجاح. أرسل الرابط التالي للمرشّح:</div>
+            <div class="copy-box">
+              <input type="text" id="generated-link" readonly>
+              <button class="btn-secondary" id="btn-copy-link">نسخ</button>
+            </div>
+            <p class="field-hint">صالح لمدة 7 أيام من الآن.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- تبويب: قائمة الاختبارات -->
+      <div class="tab-panel" id="panel-invitations">
+        <div class="card">
+          <div class="row-between">
+            <h2 class="mb-0">قائمة الدعوات</h2>
+            <button class="btn-secondary btn-sm" onclick="loadInvitations()">🔄 تحديث</button>
+          </div>
+          <div id="invitations-content" style="margin-top:14px;"></div>
+        </div>
+      </div>
+
+      <!-- تبويب: النتائج -->
+      <div class="tab-panel" id="panel-results">
+        <div class="card">
+          <div class="row-between">
+            <h2 class="mb-0">النتائج المكتملة</h2>
+            <button class="btn-secondary btn-sm" onclick="loadResults()">🔄 تحديث</button>
+          </div>
+          <div id="results-content" style="margin-top:14px;"></div>
+        </div>
+      </div>
+
+      <!-- تبويب: الصلاحيات -->
+      <div class="tab-panel" id="panel-permissions">
+        <div class="card">
+          <h2>إدارة الصلاحيات</h2>
+          <p class="muted">لمنح مستخدم صلاحية الاطلاع على نتيجة معيّنة: افتح النتيجة من تبويب «النتائج» ثم اضغط «منح الاطلاع».</p>
+          <h3 style="margin-top:16px;">المستخدمون</h3>
+          <div id="users-content"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ نافذة عرض النتيجة ============ -->
+  <div id="result-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <h2 id="modal-title">النتيجة التفصيلية</h2>
+        <button class="modal-close" onclick="closeModal('result-modal')">✕</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- ============ نافذة منح الصلاحية ============ -->
+  <div id="grant-modal" class="modal-overlay hidden">
+    <div class="modal" style="max-width:460px;">
+      <div class="modal-head">
+        <h2>منح صلاحية الاطلاع</h2>
+        <button class="modal-close" onclick="closeModal('grant-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="grant-error" class="alert alert-error hidden"></div>
+        <p class="muted" style="font-size:14px;">امنح أحد المستخدمين صلاحية الاطلاع على نتيجة <strong id="grant-candidate"></strong>.</p>
+        <div class="form-group" style="margin-top:14px;">
+          <label>المستخدم</label>
+          <select id="grant-user"></select>
+        </div>
+        <div class="form-group">
+          <label>ملاحظة (اختياري)</label>
+          <input type="text" id="grant-notes">
+        </div>
+        <button class="btn-block" id="grant-btn">منح الصلاحية</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ نافذة تغيير كلمة المرور ============ -->
+  <div id="pw-modal" class="modal-overlay hidden">
+    <div class="modal" style="max-width:440px;">
+      <div class="modal-head">
+        <h2>تغيير كلمة المرور</h2>
+        <button class="modal-close" onclick="closeModal('pw-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="pw-error" class="alert alert-error hidden"></div>
+        <div id="pw-success" class="alert alert-success hidden"></div>
+        <form id="pw-form">
+          <div class="form-group">
+            <label>كلمة المرور الحالية</label>
+            <input type="password" id="pw-current" required>
+          </div>
+          <div class="form-group">
+            <label>كلمة المرور الجديدة</label>
+            <input type="password" id="pw-new" required>
+            <p class="field-hint">8 أحرف على الأقل.</p>
+          </div>
+          <button class="btn-block" id="pw-btn">حفظ</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ==================================================================
+  //  لوحة الإدارة
+  // ==================================================================
+  let currentUser = null;
+  const DEFAULT_PASSWORDS = ['Founder@2026', 'Admin@2026'];
+
+  const esc = s => String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const $ = id => document.getElementById(id);
+  function showErr(el, msg) { el.textContent = msg; el.classList.remove('hidden'); }
+  function hide(el) { el.classList.add('hidden'); }
+  function closeModal(id) { $(id).classList.add('hidden'); }
+
+  async function api(path, opts) {
+    const res = await fetch('/api' + path, Object.assign({
+      headers: { 'Content-Type': 'application/json' }
+    }, opts));
+    let data = {};
+    try { data = await res.json(); } catch (e) {}
+    return { ok: res.ok, status: res.status, data };
+  }
+
+  const STATUS_AR = {
+    pending: 'بانتظار البدء', in_progress: 'قيد التنفيذ', completed: 'مكتمل',
+    cancelled: 'ملغى', expired: 'منتهٍ'
+  };
+  const TEST_AR = { mbti: 'MBTI', bigfive: 'Big Five', disc: 'DISC' };
+  const ROLE_AR = { founder: 'المؤسس', admin: 'مدير' };
+  const fmtDate = s => { if (!s) return '—'; const d = new Date(s.includes('Z')||s.includes('T')?s:s.replace(' ','T')+'Z'); return isNaN(d)?s:d.toLocaleString('ar-SA',{dateStyle:'medium',timeStyle:'short'}); };
+
+  // ---------- الدخول / الجلسة ----------
+  $('login-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    hide($('login-error'));
+    $('login-btn').disabled = true; $('login-btn').textContent = 'جارٍ الدخول…';
+    const r = await api('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: $('login-email').value.trim(), password: $('login-password').value })
+    });
+    $('login-btn').disabled = false; $('login-btn').textContent = 'تسجيل الدخول';
+    if (!r.ok) return showErr($('login-error'), r.data.error || 'فشل الدخول');
+    // كشف كلمة المرور الافتراضية لإظهار التذكير
+    currentUser = r.data.user;
+    currentUser._usedDefaultPw = DEFAULT_PASSWORDS.includes($('login-password').value);
+    enterDashboard();
+  });
+
+  async function checkSession() {
+    const r = await api('/auth/me');
+    if (r.ok) { currentUser = r.data.user; enterDashboard(); }
+    else { $('view-login').classList.remove('hidden'); }
+  }
+
+  function enterDashboard() {
+    hide($('view-login'));
+    $('view-dashboard').classList.remove('hidden');
+    $('user-name').textContent = currentUser.full_name || currentUser.email;
+    $('user-role').textContent = ROLE_AR[currentUser.role] || currentUser.role;
+    document.querySelectorAll('.founder-only')
+      .forEach(el => el.classList.toggle('hidden', currentUser.role !== 'founder'));
+    if (currentUser._usedDefaultPw) $('pw-reminder').classList.remove('hidden');
+    switchTab('create');
+    loadInvitations();
+  }
+
+  $('btn-logout').addEventListener('click', async () => {
+    await api('/auth/logout', { method: 'POST' });
+    location.reload();
+  });
+
+  // ---------- التبويبات ----------
+  document.querySelectorAll('.tab').forEach(t =>
+    t.addEventListener('click', () => switchTab(t.dataset.tab)));
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name));
+    if (name === 'invitations') loadInvitations();
+    if (name === 'results') loadResults();
+    if (name === 'permissions') loadUsers();
+  }
+
+  // ---------- إنشاء اختبار ----------
+  let selectedTest = null;
+  document.querySelectorAll('#test-type-cards .choice-card').forEach(card =>
+    card.addEventListener('click', () => {
+      selectedTest = card.dataset.test;
+      document.querySelectorAll('#test-type-cards .choice-card')
+        .forEach(c => c.classList.toggle('selected', c === card));
+    }));
+
+  $('create-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    hide($('create-error')); hide($('link-result'));
+    if (!selectedTest) return showErr($('create-error'), 'اختر نوع الاختبار.');
+    $('create-btn').disabled = true; $('create-btn').textContent = 'جارٍ الإنشاء…';
+    const r = await api('/admin/invitations', {
+      method: 'POST',
+      body: JSON.stringify({
+        candidate_name: $('c-name').value.trim(),
+        candidate_email: $('c-email').value.trim(),
+        candidate_phone: $('c-phone').value.trim() || undefined,
+        candidate_notes: $('c-notes').value.trim() || undefined,
+        test_id: selectedTest,
+        allow_pause_resume: $('c-pause').checked
+      })
+    });
+    $('create-btn').disabled = false; $('create-btn').textContent = 'توليد رابط الاختبار';
+    if (!r.ok) return showErr($('create-error'), r.data.error || 'تعذّر الإنشاء');
+
+    $('generated-link').value = r.data.invitation.link;
+    $('link-result').classList.remove('hidden');
+    $('create-form').reset();
+    selectedTest = null;
+    document.querySelectorAll('#test-type-cards .choice-card').forEach(c => c.classList.remove('selected'));
+    $('c-pause').checked = true;
+  });
+
+  $('btn-copy-link').addEventListener('click', async () => {
+    const inp = $('generated-link');
+    try {
+      await navigator.clipboard.writeText(inp.value);
+    } catch (e) {
+      inp.select(); document.execCommand('copy');
+    }
+    $('btn-copy-link').textContent = '✓ تم';
+    setTimeout(() => $('btn-copy-link').textContent = 'نسخ', 1500);
+  });
+
+  // ---------- قائمة الدعوات ----------
+  async function loadInvitations() {
+    const box = $('invitations-content');
+    box.innerHTML = '<div class="spinner"></div>';
+    const r = await api('/admin/invitations');
+    if (!r.ok) { box.innerHTML = `<div class="alert alert-error">${esc(r.data.error || 'خطأ')}</div>`; return; }
+    const rows = r.data.invitations || [];
+    if (!rows.length) { box.innerHTML = '<div class="empty">لا توجد دعوات بعد.</div>'; return; }
+
+    box.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr>
+        <th>المرشّح</th><th>النوع</th><th>الحالة</th><th>أُنشئت</th><th>الرابط</th><th>إجراء</th>
+      </tr></thead><tbody>${rows.map(inv => `
+        <tr>
+          <td>${esc(inv.candidate_name)}<br><span class="muted" style="font-size:12px;">${esc(inv.candidate_email)}</span></td>
+          <td>${TEST_AR[inv.test_id] || inv.test_id}</td>
+          <td><span class="badge badge-${inv.status}">${STATUS_AR[inv.status] || inv.status}</span></td>
+          <td style="white-space:nowrap;">${fmtDate(inv.created_at)}</td>
+          <td><button class="btn-secondary btn-sm" onclick="copyText('${esc(inv.link)}', this)">نسخ الرابط</button></td>
+          <td>${(inv.status === 'pending' || inv.status === 'in_progress')
+            ? `<button class="btn-danger btn-sm" onclick="cancelInvitation(${inv.id})">إلغاء</button>`
+            : '—'}</td>
+        </tr>`).join('')}</tbody></table></div>`;
+  }
+
+  async function copyText(text, btn) {
+    try { await navigator.clipboard.writeText(text); }
+    catch (e) { const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
+    const old = btn.textContent; btn.textContent = '✓ تم'; setTimeout(() => btn.textContent = old, 1500);
+  }
+
+  async function cancelInvitation(id) {
+    if (!confirm('هل تريد إلغاء هذه الدعوة؟')) return;
+    const r = await api(`/admin/invitations/${id}/cancel`, { method: 'POST' });
+    if (!r.ok) return alert(r.data.error || 'تعذّر الإلغاء');
+    loadInvitations();
+  }
+
+  // ---------- النتائج ----------
+  async function loadResults() {
+    const box = $('results-content');
+    box.innerHTML = '<div class="spinner"></div>';
+    const r = await api('/admin/results');
+    if (!r.ok) { box.innerHTML = `<div class="alert alert-error">${esc(r.data.error || 'خطأ')}</div>`; return; }
+    const rows = r.data.results || [];
+    if (!rows.length) { box.innerHTML = '<div class="empty">لا توجد نتائج مكتملة بعد.</div>'; return; }
+
+    box.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr>
+        <th>المرشّح</th><th>النوع</th><th>الرمز</th><th>التاريخ</th><th>أنشأها</th><th>إجراء</th>
+      </tr></thead><tbody>${rows.map(res => `
+        <tr>
+          <td>${esc(res.candidate_name)}<br><span class="muted" style="font-size:12px;">${esc(res.candidate_email)}</span></td>
+          <td>${TEST_AR[res.test_id] || res.test_id}</td>
+          <td><code>${esc(res.short_code || '—')}</code></td>
+          <td style="white-space:nowrap;">${fmtDate(res.computed_at)}</td>
+          <td>${esc(res.created_by_name || '—')}</td>
+          <td><button class="btn-sm" onclick="viewResult(${res.id})">عرض تفصيلي</button></td>
+        </tr>`).join('')}</tbody></table></div>`;
+  }
+
+  // ---------- عرض النتيجة التفصيلية ----------
+  async function viewResult(id) {
+    $('modal-body').innerHTML = '<div class="spinner"></div>';
+    $('result-modal').classList.remove('hidden');
+    const r = await api(`/admin/results/${id}`);
+    if (!r.ok) { $('modal-body').innerHTML = `<div class="alert alert-error">${esc(r.data.error || 'خطأ')}</div>`; return; }
+    $('modal-title').textContent = `${esc(r.data.candidate_name)} — ${TEST_AR[r.data.test_id] || r.data.test_id}`;
+    $('modal-body').innerHTML = renderFullResult(r.data);
+    setTimeout(() => document.querySelectorAll('#modal-body .bar-fill')
+      .forEach(el => el.style.width = el.getAttribute('data-target') + '%'), 80);
+  }
+
+  function renderFullResult(res) {
+    const d = res.data;
+    let profile = null, headlineCode = '', headlineName = '', headlineTag = '', bars = '';
+
+    if (d.test_id === 'mbti') {
+      profile = d.type_profile;
+      headlineCode = d.type_code;
+      headlineName = profile.type_name_ar; headlineTag = profile.type_tagline_ar;
+      Object.values(d.preferences || {}).forEach(p =>
+        bars += barRow(`${esc(p.axis_name_ar || '')}: ${esc(p.chosen_pole)} — ${esc(p.strength?.label_ar||'')}`, p.strength_percent));
+    } else if (d.test_id === 'disc') {
+      profile = d.primary_profile;
+      headlineCode = d.compound_code; headlineName = profile.style_name_ar; headlineTag = profile.tagline_ar;
+      (d.ranking || []).forEach(x => bars += barRow(`${esc(x.style_code)} — ${esc(x.style_name_ar)}`, x.percent));
+    } else if (d.test_id === 'bigfive') {
+      headlineCode = d.profile_code; headlineName = 'العوامل الخمسة الكبرى'; headlineTag = 'Big Five';
+      (d.dimension_reports || []).forEach(x => bars += barRow(`${esc(x.dimension_code)} — ${esc(x.dimension_name_ar)}`, x.score.percent));
+    }
+
+    let html = `
+      <div class="result-headline">
+        <div class="type-code">${esc(headlineCode)}</div>
+        <div class="type-name">${esc(headlineName)}</div>
+        <div class="tagline">${esc(headlineTag)}</div>
+      </div>
+      <div class="row-between" style="margin-bottom:16px;">
+        <span class="muted">الرمز: <code>${esc(res.short_code)}</code> · ${fmtDate(res.computed_at)}</span>
+        <button class="btn-sm" onclick="openGrant(${res.id}, '${esc(res.candidate_name)}')">🔑 منح الاطلاع لمستخدم آخر</button>
+      </div>
+      ${bars ? `<div class="card"><h3>المؤشرات</h3>${bars}</div>` : ''}`;
+
+    // التقرير الإداري المفصّل (MBTI / DISC)
+    if (profile && profile.detailed_report_for_admin) {
+      html += renderAdminReport(profile.detailed_report_for_admin);
+    }
+    // Big Five — تقرير لكل بُعد
+    if (d.test_id === 'bigfive') {
+      html += renderBigFiveDetail(d);
+    }
+    return html;
+  }
+
+  function renderAdminReport(rep) {
+    let h = '';
+    if (rep.executive_summary_ar)
+      h += section('الملخّص التنفيذي', `<p>${esc(rep.executive_summary_ar)}</p>`);
+    if (rep.swot_analysis_ar) h += section('تحليل SWOT', swotHtml(rep.swot_analysis_ar));
+    if (rep.professional_strengths_ar) h += section('نقاط القوة المهنية', listHtml(rep.professional_strengths_ar));
+    if (rep.challenges_and_risk_areas_ar) h += section('التحديات ومناطق الخطر', listHtml(rep.challenges_and_risk_areas_ar));
+    if (rep.communication_style_ar) h += section('أسلوب التواصل', `<p>${esc(rep.communication_style_ar)}</p>`);
+    if (rep.ideal_work_environment_ar) h += section('بيئة العمل المثالية', textOrList(rep.ideal_work_environment_ar));
+    if (rep.suitable_roles_ar) h += section('المناصب المناسبة', listHtml(rep.suitable_roles_ar));
+    if (rep.less_suitable_roles_ar) h += section('مناصب أقلّ ملاءمة', listHtml(rep.less_suitable_roles_ar));
+    if (rep.recommendations_by_role_ar) h += section('التوصيات حسب الجهة', recsHtml(rep.recommendations_by_role_ar));
+    if (rep.motivation_triggers_ar) h += section('محفّزات الدافعية', listHtml(rep.motivation_triggers_ar));
+    if (rep.red_flags_ar) h += section('إشارات تحذيرية', listHtml(rep.red_flags_ar));
+    if (rep.leadership_potential_ar) h += section('الإمكانات القيادية', textOrList(rep.leadership_potential_ar));
+    if (rep.development_recommendations_ar) h += section('توصيات التطوير', listHtml(rep.development_recommendations_ar));
+    return h;
+  }
+
+  function renderBigFiveDetail(d) {
+    let h = '';
+    if (Array.isArray(d.executive_summary))
+      h += section('الملخّص التنفيذي', listHtml(d.executive_summary));
+    (d.dimension_reports || []).forEach(r => {
+      const it = r.interpretation || {};
+      let inner = `<p><strong>${esc(it.headline_ar || '')}</strong></p>
+        <p>${esc(it.short_description_ar || '')}</p>`;
+      if (it.meaning_ar) inner += `<p>${esc(it.meaning_ar)}</p>`;
+      if (it.workplace_implications_ar) inner += `<div style="margin-top:8px;"><strong>في بيئة العمل:</strong>${textOrList(it.workplace_implications_ar)}</div>`;
+      if (it.swot_mini_ar) inner += `<div style="margin-top:8px;">${swotHtml(it.swot_mini_ar)}</div>`;
+      if (it.management_tip_ar) inner += `<div class="rec-block" style="margin-top:8px;"><strong>نصيحة إدارية:</strong> ${esc(it.management_tip_ar)}</div>`;
+      if (it.recommendations_by_role_ar) inner += recsHtml(it.recommendations_by_role_ar);
+      h += section(`${esc(r.dimension_code)} — ${esc(r.dimension_name_ar)} (${r.score.percent}%) · ${esc(it.level_label_ar||'')}`, inner);
+    });
+    return h;
+  }
+
+  // ---------- مساعدات العرض ----------
+  function section(title, inner) {
+    return `<div class="card detail-section"><h3>${esc(title)}</h3>${inner}</div>`;
+  }
+  function listHtml(arr) {
+    if (!arr) return ''; if (!Array.isArray(arr)) return `<p>${esc(arr)}</p>`;
+    return '<ul class="clean">' + arr.map(x => `<li>${esc(x)}</li>`).join('') + '</ul>';
+  }
+  function textOrList(v) { return Array.isArray(v) ? listHtml(v) : `<p>${esc(v)}</p>`; }
+  function barRow(label, pct) {
+    return `<div class="score-bar"><div class="label">${label}</div>
+      <div class="bar-container"><div class="bar-fill" data-target="${pct}"></div></div>
+      <div class="percent">${pct}%</div></div>`;
+  }
+  function swotHtml(swot) {
+    const map = [['strengths','swot-s','قوة (S)'],['weaknesses','swot-w','ضعف (W)'],
+      ['opportunities','swot-o','فرص (O)'],['threats','swot-t','تهديدات (T)']];
+    return '<div class="swot-grid">' + map.map(([k, cls, fallback]) => {
+      const b = swot[k]; if (!b) return '';
+      const items = b.items_ar || b;
+      return `<div class="swot-box ${cls}"><h4>${esc(b.title_ar || fallback)}</h4>
+        <ul>${(Array.isArray(items)?items:[]).map(i => `<li>${esc(i)}</li>`).join('')}</ul></div>`;
+    }).join('') + '</div>';
+  }
+  function recsHtml(recs) {
+    return Object.values(recs).map(r => {
+      if (!r || typeof r !== 'object') return '';
+      return `<div class="rec-block"><h4>${esc(r.title_ar || '')}</h4>
+        ${r.intro_ar ? `<p>${esc(r.intro_ar)}</p>` : ''}
+        ${r.items_ar ? listHtml(r.items_ar) : ''}</div>`;
+    }).join('');
+  }
+
+  // ---------- منح الصلاحية ----------
+  let grantResultId = null;
+  async function openGrant(resultId, candidateName) {
+    grantResultId = resultId;
+    hide($('grant-error'));
+    $('grant-candidate').textContent = candidateName;
+    $('grant-notes').value = '';
+    const r = await api('/admin/users');
+    const users = (r.data.users || []).filter(u => u.id !== currentUser.id);
+    $('grant-user').innerHTML = users.map(u =>
+      `<option value="${u.id}">${esc(u.full_name)} (${ROLE_AR[u.role] || u.role})</option>`).join('');
+    $('grant-modal').classList.remove('hidden');
+  }
+  $('grant-btn').addEventListener('click', async () => {
+    hide($('grant-error'));
+    const userId = $('grant-user').value;
+    if (!userId) return showErr($('grant-error'), 'اختر مستخدماً.');
+    const r = await api(`/admin/results/${grantResultId}/grant`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: parseInt(userId), notes: $('grant-notes').value.trim() || undefined })
+    });
+    if (!r.ok) return showErr($('grant-error'), r.data.error || 'تعذّر المنح');
+    closeModal('grant-modal');
+    alert('✓ تمّ منح الصلاحية بنجاح.');
+  });
+
+  // ---------- المستخدمون (تبويب الصلاحيات) ----------
+  async function loadUsers() {
+    const box = $('users-content');
+    box.innerHTML = '<div class="spinner"></div>';
+    const r = await api('/admin/users');
+    if (!r.ok) { box.innerHTML = `<div class="alert alert-error">${esc(r.data.error || 'خطأ')}</div>`; return; }
+    const users = r.data.users || [];
+    box.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr><th>الاسم</th><th>البريد</th><th>الدور</th></tr></thead>
+      <tbody>${users.map(u => `<tr>
+        <td>${esc(u.full_name)}</td><td dir="ltr" style="text-align:left;">${esc(u.email)}</td>
+        <td><span class="role-chip" style="background:var(--primary-light);color:var(--primary);">${ROLE_AR[u.role] || u.role}</span></td>
+      </tr>`).join('')}</tbody></table></div>`;
+  }
+
+  // ---------- تغيير كلمة المرور ----------
+  function openPwModal() {
+    hide($('pw-error')); hide($('pw-success'));
+    $('pw-form').reset();
+    $('pw-modal').classList.remove('hidden');
+  }
+  $('btn-change-pw').addEventListener('click', openPwModal);
+  $('pw-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    hide($('pw-error')); hide($('pw-success'));
+    const r = await api('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ current_password: $('pw-current').value, new_password: $('pw-new').value })
+    });
+    if (!r.ok) return showErr($('pw-error'), r.data.error || 'تعذّر التغيير');
+    $('pw-success').textContent = '✓ تمّ تغيير كلمة المرور بنجاح.';
+    $('pw-success').classList.remove('hidden');
+    $('pw-form').reset();
+    hide($('pw-reminder'));
+    if (currentUser) currentUser._usedDefaultPw = false;
+  });
+
+  // ---------- البدء ----------
+  checkSession();
+</script>
+
+</body>
+</html>

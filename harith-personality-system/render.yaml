@@ -1,0 +1,35 @@
+# ============================================================
+#  Render Blueprint — نظام تحليل شخصية الموظفين
+#  الحارث السحيباني محامون ومستشارون
+# ============================================================
+# يُنشئ خدمة ويب Node.js مع قرص تخزين دائم لقاعدة البيانات.
+#
+# ملاحظة مهمّة: النظام يقع في مجلد فرعي داخل مستودع World-Cup.
+#   - الطريقة الموصى بها: أنشئ Web Service يدوياً في Render واضبط
+#     Root Directory = harith-personality-system (راجع DEPLOY.md).
+#   - أو إن أردت استخدام هذا الملف كـ Blueprint: nقله إلى جذر المستودع
+#     (rootDir أدناه يشير للمجلد الفرعي).
+# ============================================================
+
+services:
+  - type: web
+    name: harith-personality-system
+    runtime: node
+    plan: starter            # خطة مدفوعة — مطلوبة لاستخدام القرص الدائم (disk)
+    region: frankfurt        # الأقرب للسعودية (يمكن تغييرها)
+    branch: main
+    rootDir: harith-personality-system   # النظام في مجلد فرعي داخل المستودع
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_SECRET
+        generateValue: true          # يولّده Render تلقائياً ويثبّته (تبقى الجلسات صالحة بين عمليات النشر)
+      - key: DATABASE_PATH
+        value: /var/data/database.sqlite   # داخل القرص الدائم
+    disk:
+      name: harith-data
+      mountPath: /var/data
+      sizeGB: 1

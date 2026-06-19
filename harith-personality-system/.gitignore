@@ -1,0 +1,11 @@
+# Dependencies
+node_modules/
+
+# Database (تُنشأ تلقائياً عند التشغيل)
+database.sqlite
+
+# Environment / secrets
+.env
+
+# Lock file (حسب طلب المالك)
+package-lock.json

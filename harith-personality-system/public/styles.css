@@ -1,0 +1,249 @@
+/* ================================================================
+   الهوية البصرية — الحارث السحيباني محامون ومستشارون
+   ملف تنسيق مشترك لجميع الواجهات (home / admin / take)
+================================================================= */
+
+:root {
+  --primary: #0A5778;
+  --primary-dark: #074258;
+  --primary-light: #E8F1F5;
+  --secondary: #A89F8E;
+  --bg: #F5F3EF;
+  --alert: #FFF4E6;
+  --text: #2C2C2C;
+  --muted: #6B6B6B;
+  --border: #DDD7CE;
+  --card-bg: #FFFFFF;
+
+  --success-bg: #E3F2E6;
+  --success-border: #2E7D32;
+  --weakness-bg: #FDEBEB;
+  --weakness-border: #C62828;
+  --opportunity-bg: #E3F1FB;
+  --opportunity-border: #1565C0;
+  --threat-bg: #FFF4E0;
+  --threat-border: #E65100;
+
+  --radius: 12px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.06);
+  --shadow-lg: 0 6px 24px rgba(0,0,0,0.12);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: Arial, 'Tahoma', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  min-height: 100vh;
+}
+
+a { color: var(--primary); }
+
+.hidden { display: none !important; }
+
+/* ===== الرأس ===== */
+.header {
+  background: var(--primary);
+  color: #fff;
+  padding: 24px 20px;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.header h1 { font-size: 24px; margin-bottom: 6px; font-weight: 700; }
+.header .subtitle { font-size: 14px; opacity: 0.9; }
+.header .logo { height: 56px; margin-bottom: 12px; border-radius: 8px; }
+
+/* ===== الحاوية ===== */
+.container { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+.container-narrow { max-width: 640px; }
+
+/* ===== البطاقات ===== */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+  margin-bottom: 18px;
+  box-shadow: var(--shadow);
+}
+.card h2 { color: var(--primary); font-size: 19px; margin-bottom: 14px; }
+.card h3 { color: var(--primary); font-size: 16px; margin-bottom: 10px; }
+
+/* ===== الأزرار ===== */
+button, .btn {
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 22px;
+  background: var(--primary);
+  color: #fff;
+  transition: background .15s, transform .05s, opacity .15s;
+}
+button:hover, .btn:hover { background: var(--primary-dark); }
+button:active, .btn:active { transform: translateY(1px); }
+button:disabled { background: var(--secondary); opacity: .6; cursor: not-allowed; }
+
+.btn-secondary { background: #fff; color: var(--primary); border: 1.5px solid var(--primary); }
+.btn-secondary:hover { background: var(--primary-light); }
+.btn-danger { background: var(--weakness-border); }
+.btn-danger:hover { background: #a31f1f; }
+.btn-sm { padding: 7px 14px; font-size: 13px; }
+.btn-block { display: block; width: 100%; }
+
+/* ===== النماذج ===== */
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; }
+input, select, textarea {
+  font-family: inherit;
+  font-size: 15px;
+  width: 100%;
+  padding: 11px 13px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+textarea { resize: vertical; min-height: 70px; }
+.checkbox-row { display: flex; align-items: center; gap: 8px; }
+.checkbox-row input { width: auto; }
+.field-hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* ===== التنبيهات ===== */
+.alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; }
+.alert-info { background: var(--primary-light); border: 1px solid var(--primary); color: var(--primary-dark); }
+.alert-warn { background: var(--alert); border: 1px solid #E0A458; color: #8a5a16; }
+.alert-error { background: var(--weakness-bg); border: 1px solid var(--weakness-border); color: var(--weakness-border); }
+.alert-success { background: var(--success-bg); border: 1px solid var(--success-border); color: var(--success-border); }
+
+/* ===== الجداول ===== */
+.table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; background: #fff; }
+th, td { padding: 12px 14px; text-align: right; border-bottom: 1px solid var(--border); font-size: 14px; }
+th { background: var(--primary-light); color: var(--primary-dark); font-weight: 700; white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #fafafa; }
+
+/* ===== الشارات (Badges) ===== */
+.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+.badge-pending { background: var(--alert); color: #8a5a16; }
+.badge-in_progress { background: var(--opportunity-bg); color: var(--opportunity-border); }
+.badge-completed { background: var(--success-bg); color: var(--success-border); }
+.badge-cancelled { background: #eee; color: var(--muted); }
+.badge-expired { background: var(--weakness-bg); color: var(--weakness-border); }
+
+/* ===== التبويبات ===== */
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 2px solid var(--border); margin-bottom: 22px; }
+.tab {
+  background: transparent; color: var(--muted); border: none;
+  border-bottom: 3px solid transparent; border-radius: 0;
+  padding: 12px 18px; font-weight: 700; margin-bottom: -2px;
+}
+.tab:hover { background: transparent; color: var(--primary); }
+.tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+/* ===== الشبكة (Cards grid) ===== */
+.grid { display: grid; gap: 16px; }
+.grid-2 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.grid-3 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+
+/* ===== بطاقات اختيار النوع ===== */
+.choice-card {
+  border: 2px solid var(--border); border-radius: var(--radius);
+  padding: 22px; text-align: center; cursor: pointer; background: #fff;
+  transition: border-color .15s, box-shadow .15s, transform .1s;
+}
+.choice-card:hover { border-color: var(--primary); box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+.choice-card.selected { border-color: var(--primary); background: var(--primary-light); }
+.choice-card .icon { font-size: 40px; display: block; margin-bottom: 10px; }
+.choice-card .name { font-weight: 700; font-size: 17px; color: var(--primary); margin-bottom: 4px; }
+.choice-card .desc { font-size: 13px; color: var(--muted); }
+
+/* ===== أشرطة النِسَب ===== */
+.score-bar { margin-bottom: 14px; }
+.score-bar .label { font-weight: 600; margin-bottom: 5px; font-size: 14px; }
+.bar-container { background: var(--primary-light); border-radius: 20px; overflow: hidden; height: 30px; position: relative; }
+.bar-fill {
+  background: var(--primary); color: #fff; height: 100%; width: 0;
+  display: flex; align-items: center; padding: 0 12px; font-size: 12px;
+  border-radius: 20px; transition: width 1s ease; white-space: nowrap;
+}
+.score-bar .percent { font-size: 13px; color: var(--muted); margin-top: 3px; }
+
+/* ===== رأس النتيجة ===== */
+.result-headline { text-align: center; padding: 28px; background: var(--primary); color: #fff; border-radius: var(--radius); margin-bottom: 18px; }
+.result-headline .type-code { font-size: 46px; font-weight: 800; letter-spacing: 2px; }
+.result-headline .type-name { font-size: 22px; margin-top: 6px; }
+.result-headline .tagline { font-size: 15px; opacity: .9; margin-top: 6px; }
+
+/* ===== SWOT ===== */
+.swot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.swot-box { border-radius: 10px; padding: 16px; border: 1px solid; }
+.swot-box h4 { font-size: 15px; margin-bottom: 8px; }
+.swot-box ul { padding-right: 18px; }
+.swot-box li { font-size: 13.5px; margin-bottom: 5px; }
+.swot-s { background: var(--success-bg); border-color: var(--success-border); }
+.swot-s h4 { color: var(--success-border); }
+.swot-w { background: var(--weakness-bg); border-color: var(--weakness-border); }
+.swot-w h4 { color: var(--weakness-border); }
+.swot-o { background: var(--opportunity-bg); border-color: var(--opportunity-border); }
+.swot-o h4 { color: var(--opportunity-border); }
+.swot-t { background: var(--threat-bg); border-color: var(--threat-border); }
+.swot-t h4 { color: var(--threat-border); }
+
+/* ===== القوائم ===== */
+ul.clean { padding-right: 20px; }
+ul.clean li { margin-bottom: 7px; }
+
+/* ===== النوافذ المنبثقة (Modal) ===== */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.5);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 30px 16px; overflow-y: auto; z-index: 100;
+}
+.modal {
+  background: var(--bg); border-radius: var(--radius);
+  max-width: 860px; width: 100%; box-shadow: var(--shadow-lg);
+  max-height: 90vh; overflow-y: auto;
+}
+.modal-head {
+  position: sticky; top: 0; background: var(--primary); color: #fff;
+  padding: 16px 22px; display: flex; justify-content: space-between; align-items: center;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.modal-head h2 { color: #fff; margin: 0; font-size: 18px; }
+.modal-close { background: rgba(255,255,255,.2); padding: 6px 12px; font-size: 18px; line-height: 1; }
+.modal-close:hover { background: rgba(255,255,255,.35); }
+.modal-body { padding: 22px; }
+
+/* ===== أدوات ===== */
+.spinner { width: 42px; height: 42px; border: 4px solid var(--primary-light); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 30px auto; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.center { text-align: center; }
+.muted { color: var(--muted); }
+.mb-0 { margin-bottom: 0; }
+.mt-1 { margin-top: 10px; }
+.row-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.copy-box { display: flex; gap: 8px; align-items: stretch; }
+.copy-box input { font-family: monospace; direction: ltr; text-align: left; }
+
+/* ===== التذييل ===== */
+.footer { text-align: center; padding: 24px; color: var(--muted); font-size: 13px; }
+
+/* ===== الاستجابة ===== */
+@media (max-width: 640px) {
+  .swot-grid { grid-template-columns: 1fr; }
+  .header h1 { font-size: 19px; }
+  th, td { padding: 9px 8px; font-size: 13px; }
+}

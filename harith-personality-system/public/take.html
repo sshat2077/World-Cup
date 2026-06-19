@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>اختبار الشخصية — الحارث السحيباني محامون ومستشارون</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .answer-options { display: grid; gap: 10px; margin-top: 16px; }
+    .answer-option {
+      display: flex; align-items: center; gap: 12px;
+      border: 1.5px solid var(--border); border-radius: 10px;
+      padding: 13px 16px; cursor: pointer; background: #fff;
+      transition: border-color .12s, background .12s;
+    }
+    .answer-option:hover { border-color: var(--primary); background: var(--primary-light); }
+    .answer-option.selected { border-color: var(--primary); background: var(--primary-light); font-weight: 700; }
+    .answer-option .number {
+      width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%;
+      background: var(--primary-light); color: var(--primary);
+      display: flex; align-items: center; justify-content: center; font-weight: 700;
+    }
+    .answer-option.selected .number { background: var(--primary); color: #fff; }
+    .progress { background: var(--primary-light); border-radius: 20px; height: 12px; overflow: hidden; }
+    .progress .fill { background: var(--primary); height: 100%; width: 0; transition: width .3s; }
+    .progress-text { text-align: center; font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+    .q-nav { display: flex; justify-content: space-between; gap: 10px; margin-top: 22px; }
+    .question-text { font-size: 19px; font-weight: 700; line-height: 1.6; min-height: 60px; }
+    .save-bar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+    .strength-list li { margin-bottom: 7px; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>نظام تحليل شخصية الموظفين</h1>
+    <div class="subtitle">الحارث السحيباني محامون ومستشارون</div>
+  </div>
+
+  <div class="container container-narrow">
+
+    <!-- شاشة الترحيب -->
+    <div id="screen-welcome" class="hidden">
+      <div class="card center">
+        <h2 id="welcome-title">مرحباً</h2>
+        <p id="welcome-test" class="muted" style="font-size:16px;"></p>
+        <p id="welcome-desc" style="margin:14px 0;"></p>
+        <div class="alert alert-info center" id="welcome-meta"></div>
+        <div id="welcome-instructions" style="text-align:right;margin:14px 0;"></div>
+        <div class="alert alert-warn" id="welcome-resume" style="display:none;">
+          📌 لديك تقدّم محفوظ سابق — سيُستأنف الاختبار من حيث توقّفت.
+        </div>
+        <button id="btn-start" class="btn-block" style="margin-top:10px;">ابدأ الاختبار ←</button>
+      </div>
+    </div>
+
+    <!-- شاشة الأسئلة -->
+    <div id="screen-questions" class="hidden">
+      <div class="card">
+        <div class="save-bar">
+          <button id="btn-save" class="btn-secondary btn-sm" style="display:none;">💾 حفظ والإكمال لاحقاً</button>
+        </div>
+        <div class="progress"><div class="fill" id="progress-fill"></div></div>
+        <div class="progress-text" id="progress-text">السؤال 1 من 0</div>
+
+        <div style="margin-top:22px;">
+          <div class="muted" id="question-number" style="font-size:13px;margin-bottom:6px;"></div>
+          <div class="question-text" id="question-text"></div>
+          <div class="answer-options" id="answer-options"></div>
+        </div>
+
+        <div class="q-nav">
+          <button id="btn-prev" class="btn-secondary">→ السابق</button>
+          <button id="btn-next">التالي ←</button>
+        </div>
+      </div>
+      <p class="center muted" id="save-status" style="font-size:13px;height:18px;"></p>
+    </div>
+
+    <!-- شاشة التحميل -->
+    <div id="screen-loading" class="hidden">
+      <div class="card center">
+        <div class="spinner"></div>
+        <p class="muted">جارٍ المعالجة…</p>
+      </div>
+    </div>
+
+    <!-- شاشة النتيجة -->
+    <div id="screen-result" class="hidden">
+      <div id="result-content"></div>
+    </div>
+
+    <!-- شاشة الخطأ -->
+    <div id="screen-error" class="hidden">
+      <div class="card center">
+        <h2 style="color:var(--weakness-border)">تعذّر فتح الاختبار</h2>
+        <p class="error-msg" id="error-message" style="margin-top:10px;"></p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">© الحارث السحيباني محامون ومستشارون</div>
+
+<script>
+  // ==================================================================
+  //  رحلة الموظف — تعتمد على /api/take/:token/*
+  // ==================================================================
+
+  const token = window.location.pathname.split('/').filter(Boolean).pop();
+
+  const state = {
+    token,
+    questions: [],
+    answers: {},          // { questionId: value }
+    currentIndex: 0,
+    scaleLabels: null,
+    allowPauseResume: false,
+    testId: null
+  };
+
+  const screens = {
+    welcome:   document.getElementById('screen-welcome'),
+    questions: document.getElementById('screen-questions'),
+    loading:   document.getElementById('screen-loading'),
+    result:    document.getElementById('screen-result'),
+    error:     document.getElementById('screen-error')
+  };
+  function showScreen(name) {
+    Object.values(screens).forEach(s => s.classList.add('hidden'));
+    screens[name].classList.remove('hidden');
+    window.scrollTo(0, 0);
+  }
+  function showError(msg) {
+    document.getElementById('error-message').textContent = msg;
+    showScreen('error');
+  }
+  const esc = s => String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  // ---------- 1. تحميل معلومات الاختبار ----------
+  async function loadInfo() {
+    showScreen('loading');
+    try {
+      const res = await fetch(`/api/take/${encodeURIComponent(token)}/info`);
+      const data = await res.json();
+      if (!res.ok) return showError(data.error || 'الرابط غير صالح.');
+
+      state.testId = data.test_id;
+      state.allowPauseResume = !!data.allow_pause_resume;
+
+      document.getElementById('welcome-title').textContent = `مرحباً ${data.candidate_name || ''}`;
+      document.getElementById('welcome-test').textContent = data.test_name_ar || '';
+      document.getElementById('welcome-desc').textContent = data.description_ar || '';
+      document.getElementById('welcome-meta').innerHTML =
+        `📝 ${data.total_questions} سؤال &nbsp;·&nbsp; ⏱️ حوالي ${data.estimated_time_minutes} دقيقة`;
+
+      if (Array.isArray(data.instructions_ar)) {
+        document.getElementById('welcome-instructions').innerHTML =
+          '<strong>تعليمات:</strong><ul class="clean">' +
+          data.instructions_ar.map(i => `<li>${esc(i)}</li>`).join('') + '</ul>';
+      } else if (data.instructions_ar) {
+        document.getElementById('welcome-instructions').innerHTML =
+          `<strong>تعليمات:</strong><p>${esc(data.instructions_ar)}</p>`;
+      }
+
+      showScreen('welcome');
+    } catch (err) {
+      showError('تعذّر الاتصال بالخادم: ' + err.message);
+    }
+  }
+
+  // ---------- 2. بدء / استئناف الأسئلة ----------
+  async function startQuestions() {
+    showScreen('loading');
+    try {
+      const res = await fetch(`/api/take/${encodeURIComponent(token)}/questions`);
+      const data = await res.json();
+      if (!res.ok) return showError(data.error || 'تعذّر تحميل الأسئلة.');
+
+      state.questions = data.questions;
+      state.scaleLabels = data.scale_ar;
+      state.allowPauseResume = !!data.allow_pause_resume;
+
+      // استئناف التقدّم المحفوظ
+      if (data.saved_progress && data.saved_progress.answers) {
+        state.answers = data.saved_progress.answers || {};
+        state.currentIndex = data.saved_progress.current_index || 0;
+        if (state.currentIndex >= state.questions.length) state.currentIndex = 0;
+      } else {
+        state.answers = {};
+        state.currentIndex = 0;
+      }
+
+      document.getElementById('btn-save').style.display =
+        state.allowPauseResume ? 'inline-block' : 'none';
+
+      renderQuestion();
+      showScreen('questions');
+    } catch (err) {
+      showError('تعذّر بدء الاختبار: ' + err.message);
+    }
+  }
+
+  function renderQuestion() {
+    const q = state.questions[state.currentIndex];
+    const total = state.questions.length;
+    const current = state.currentIndex + 1;
+
+    document.getElementById('progress-fill').style.width = (current / total * 100) + '%';
+    document.getElementById('progress-text').textContent = `السؤال ${current} من ${total}`;
+    document.getElementById('question-number').textContent = `سؤال ${current}`;
+    document.getElementById('question-text').textContent = q.text;
+
+    const box = document.getElementById('answer-options');
+    box.innerHTML = '';
+    [1, 2, 3, 4, 5].forEach(n => {
+      const div = document.createElement('div');
+      div.className = 'answer-option' + (state.answers[q.id] === n ? ' selected' : '');
+      div.innerHTML = `<span class="number">${n}</span><span>${esc(state.scaleLabels[n])}</span>`;
+      div.addEventListener('click', () => {
+        state.answers[q.id] = n;
+        renderQuestion();
+      });
+      box.appendChild(div);
+    });
+
+    document.getElementById('btn-prev').disabled = (state.currentIndex === 0);
+    const nextBtn = document.getElementById('btn-next');
+    nextBtn.textContent = (current === total) ? '✓ إنهاء الاختبار وتسليمه' : 'التالي ←';
+    nextBtn.disabled = !(q.id in state.answers);
+  }
+
+  document.getElementById('btn-prev').addEventListener('click', () => {
+    if (state.currentIndex > 0) { state.currentIndex--; renderQuestion(); }
+  });
+  document.getElementById('btn-next').addEventListener('click', () => {
+    if (state.currentIndex < state.questions.length - 1) {
+      state.currentIndex++; renderQuestion();
+    } else {
+      submitAnswers();
+    }
+  });
+  document.getElementById('btn-start').addEventListener('click', startQuestions);
+
+  // ---------- 3. الحفظ الجزئي ----------
+  document.getElementById('btn-save').addEventListener('click', async () => {
+    const statusEl = document.getElementById('save-status');
+    statusEl.textContent = 'جارٍ الحفظ…';
+    try {
+      const res = await fetch(`/api/take/${encodeURIComponent(token)}/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers: state.answers, current_index: state.currentIndex })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'تعذّر الحفظ');
+      statusEl.textContent = '✓ تم الحفظ. يمكنك إغلاق الصفحة والعودة لاحقاً عبر نفس الرابط.';
+    } catch (err) {
+      statusEl.textContent = '✗ ' + err.message;
+    }
+  });
+
+  // ---------- 4. التسليم النهائي ----------
+  async function submitAnswers() {
+    if (Object.keys(state.answers).length < state.questions.length) {
+      const ok = confirm('لم تُجِب على جميع الأسئلة. هل تريد التسليم على أي حال؟');
+      if (!ok) return;
+    }
+    showScreen('loading');
+    try {
+      const answersArray = Object.entries(state.answers)
+        .map(([id, answer]) => ({ id: parseInt(id), answer }));
+
+      const res = await fetch(`/api/take/${encodeURIComponent(token)}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers: answersArray })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'خطأ في حساب النتيجة');
+
+      renderShortResult(data.short_result, data.message);
+      showScreen('result');
+      setTimeout(() => {
+        document.querySelectorAll('.bar-fill').forEach(el => {
+          el.style.width = el.getAttribute('data-target') + '%';
+        });
+      }, 100);
+    } catch (err) {
+      showError('تعذّر تسليم الاختبار: ' + err.message);
+    }
+  }
+
+  // ---------- 5. عرض النتيجة المختصرة ----------
+  function renderShortResult(r, message) {
+    const c = document.getElementById('result-content');
+    let body = '';
+
+    if (!r) { c.innerHTML = '<div class="card">تمّ الاستلام.</div>'; return; }
+
+    if (r.test_id === 'mbti') {
+      let prefs = '';
+      Object.values(r.preferences || {}).forEach(p => {
+        prefs += barRow(`${esc(p.pole)} — ${esc(p.label)}`, p.percent);
+      });
+      body = `
+        ${headline(r.type_code, r.type_name_ar, r.tagline_ar)}
+        ${r.short_description ? card('ملخّص شخصيتك', `<p>${esc(r.short_description)}</p>`) : ''}
+        ${prefs ? card('أقطاب الشخصية', prefs) : ''}
+        ${strengths(r.top_strengths)}
+      `;
+    } else if (r.test_id === 'disc') {
+      let ranking = '';
+      (r.ranking || []).forEach(x => ranking += barRow(`${esc(x.style)} — ${esc(x.name)}`, x.percent));
+      body = `
+        ${headline(r.compound_code, r.style_name_ar, r.tagline_ar)}
+        ${r.short_description ? card('ملخّص نمطك السلوكي', `<p>${esc(r.short_description)}</p>`) : ''}
+        ${ranking ? card('ترتيب الأنماط الأربعة', ranking) : ''}
+        ${strengths(r.top_strengths)}
+      `;
+    } else if (r.test_id === 'bigfive') {
+      let dims = '', details = '';
+      (r.dimensions || []).forEach(d => {
+        dims += barRow(`${esc(d.code)} — ${esc(d.name)}`, d.percent);
+        details += `<div style="margin-bottom:12px;">
+          <strong>${esc(d.name)} (${d.percent}%) — ${esc(d.level_label)}</strong>
+          <p class="muted" style="font-size:14px;">${esc(d.short_description)}</p></div>`;
+      });
+      body = `
+        ${headline(r.profile_code, 'العوامل الخمسة الكبرى', 'Big Five')}
+        ${dims ? card('نسبك في الأبعاد الخمسة', dims) : ''}
+        ${details ? card('تفسير مختصر', details) : ''}
+      `;
+    } else {
+      body = card('تمّ الاستلام', '<p>تمّ تسجيل إجاباتك بنجاح.</p>');
+    }
+
+    body += `<div class="card" style="background:var(--alert)">
+      <h3>📬 شكراً لك</h3>
+      <p>${esc(message || 'تمّ إكمال الاختبار بنجاح. سيطّلع المسؤول على النتيجة التفصيلية.')}</p>
+    </div>`;
+
+    c.innerHTML = body;
+  }
+
+  // ---------- مساعدات العرض ----------
+  function headline(code, name, tag) {
+    return `<div class="result-headline">
+      <div class="type-code">${esc(code)}</div>
+      <div class="type-name">${esc(name)}</div>
+      <div class="tagline">${esc(tag)}</div></div>`;
+  }
+  function card(title, inner) { return `<div class="card"><h2>${esc(title)}</h2>${inner}</div>`; }
+  function barRow(label, pct) {
+    return `<div class="score-bar">
+      <div class="label">${label}</div>
+      <div class="bar-container"><div class="bar-fill" data-target="${pct}"></div></div>
+      <div class="percent">${pct}%</div></div>`;
+  }
+  function strengths(list) {
+    if (!list || !list.length) return '';
+    return card('أبرز نقاط قوّتك', '<ul class="clean strength-list">' +
+      list.map(s => `<li>${esc(s)}</li>`).join('') + '</ul>');
+  }
+
+  // ---------- البدء ----------
+  if (!token) {
+    showError('الرابط غير صالح.');
+  } else {
+    loadInfo();
+  }
+</script>
+
+</body>
+</html>

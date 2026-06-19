@@ -1,0 +1,22 @@
+{
+  "name": "harith-personality-system",
+  "version": "0.1.0-prototype",
+  "description": "نظام تحليل شخصية الموظفين — الحارث السحيباني محامون ومستشارون",
+  "main": "server/app.js",
+  "scripts": {
+    "start": "node server/app.js",
+    "test:mbti": "node server/engines/test-mbti-engine.js",
+    "test:disc": "node server/engines/test-disc-engine.js",
+    "test:bigfive": "node server/engines/test-bigfive-engine.js",
+    "test:all": "npm run test:mbti && npm run test:disc && npm run test:bigfive"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "express": "^4.21.1",
+    "express-session": "^1.18.1",
+    "sql.js": "^1.12.0"
+  },
+  "author": "الحارث السحيباني محامون ومستشارون",
+  "license": "UNLICENSED",
+  "private": true
+}
