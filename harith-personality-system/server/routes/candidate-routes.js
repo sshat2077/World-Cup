@@ -29,6 +29,37 @@ const QUESTIONS_FILES = {
   legal: 'legal-trainee-questions.json'
 };
 
+// ========== خلط عشوائي مبذور بالـtoken (ثابت لكل مرشّح، متنوّع بينهم) ==========
+// يجعل ترتيب الأسئلة والخيارات عشوائياً دون كشف نمط (الإجابة الصحيحة لا تثبت في موضع)،
+// ويبقى ثابتاً عند الاستئناف لأن البذرة مشتقّة من الـtoken.
+
+function seedFromToken(token) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < token.length; i++) {
+    h ^= token.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function seededShuffle(arr, rnd) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 // ========== مُساعِد: التحقّق من صلاحية token ==========
 
 /**
@@ -130,15 +161,22 @@ router.get('/:token/questions', (req, res) => {
   }
 
   // الاختبار المعرفي: أسئلة متعدّدة الخيارات — نُرجع نصوص الخيارات دون الدرجات
+  // مع خلط ترتيب الأسئلة والخيارات عشوائياً (مبذور بالـtoken) كي لا يثبت موضع الإجابة الصحيحة.
   const isMCQ = invitation.test_id === 'legal';
-  const questionsOut = isMCQ
-    ? raw.questions.map(q => ({
-        id: q.id,
-        scenario: q.scenario_ar || '',
-        text: q.question_ar,
-        options: (q.options || []).map(o => ({ id: o.id, text: o.text_ar }))
-      }))
-    : raw.questions.map(q => ({ id: q.id, text: q.text }));
+  let questionsOut;
+  if (isMCQ) {
+    const rnd = mulberry32(seedFromToken(token));
+    const shuffledQuestions = seededShuffle(raw.questions, rnd);
+    questionsOut = shuffledQuestions.map(q => ({
+      id: q.id,
+      scenario: q.scenario_ar || '',
+      text: q.question_ar,
+      // المُعرّف (id) يبقى مرتبطاً بنصّه ودرجته؛ يتغيّر الموضع فقط
+      options: seededShuffle(q.options || [], rnd).map(o => ({ id: o.id, text: o.text_ar }))
+    }));
+  } else {
+    questionsOut = raw.questions.map(q => ({ id: q.id, text: q.text }));
+  }
 
   res.json({
     test_id: raw.test_id,

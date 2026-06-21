@@ -224,12 +224,12 @@
     box.innerHTML = '';
 
     if (state.questionType === 'mcq') {
-      // أسئلة متعدّدة الخيارات (الاختبار المعرفي)
-      const letters = { a: 'أ', b: 'ب', c: 'ج', d: 'د', e: 'هـ' };
-      (q.options || []).forEach(opt => {
+      // أسئلة متعدّدة الخيارات (الاختبار المعرفي) — الترقيم حسب الموضع (الترتيب مخلوط من الخادم)
+      const posLetters = ['أ', 'ب', 'ج', 'د', 'هـ', 'و'];
+      (q.options || []).forEach((opt, idx) => {
         const div = document.createElement('div');
         div.className = 'answer-option' + (state.answers[q.id] === opt.id ? ' selected' : '');
-        div.innerHTML = `<span class="number">${letters[opt.id] || opt.id}</span><span>${esc(opt.text)}</span>`;
+        div.innerHTML = `<span class="number">${posLetters[idx] || (idx + 1)}</span><span>${esc(opt.text)}</span>`;
         div.addEventListener('click', () => { state.answers[q.id] = opt.id; renderQuestion(); });
         box.appendChild(div);
       });
