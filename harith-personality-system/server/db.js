@@ -54,7 +54,55 @@ async function initDB() {
     console.log('[DB] تمّ إنشاء قاعدة بيانات جديدة مع بيانات البداية');
   }
 
+  migrateSchema();   // ترحيلات تدريجية للقواعد القائمة
+
   return db;
+}
+
+/**
+ * ترحيلات المخطّط للقواعد القائمة (تُطبَّق مرة واحدة عند الحاجة).
+ * حالياً: توسيع قيد test_id ليشمل 'legal' (الاختبار المعرفي).
+ */
+function migrateSchema() {
+  try {
+    const res = db.exec("SELECT sql FROM sqlite_master WHERE type='table' AND name='test_invitations'");
+    const ddl = (res.length && res[0].values.length) ? String(res[0].values[0][0]) : '';
+    if (ddl && !ddl.includes("'legal'")) {
+      console.log("[DB] ترحيل: توسيع قيد test_id ليشمل 'legal'");
+      db.run(`
+        ALTER TABLE test_invitations RENAME TO _ti_old;
+        CREATE TABLE test_invitations (
+          id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+          token                 TEXT NOT NULL UNIQUE,
+          candidate_id          INTEGER NOT NULL,
+          test_id               TEXT NOT NULL CHECK(test_id IN ('mbti', 'bigfive', 'disc', 'legal')),
+          allow_pause_resume    INTEGER NOT NULL DEFAULT 0,
+          created_by            INTEGER NOT NULL,
+          created_at            TEXT NOT NULL DEFAULT (datetime('now')),
+          expires_at            TEXT NOT NULL,
+          status                TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'in_progress', 'completed', 'expired', 'cancelled')),
+          started_at            TEXT,
+          completed_at          TEXT,
+          result_id             INTEGER,
+          FOREIGN KEY (candidate_id) REFERENCES candidates(id),
+          FOREIGN KEY (created_by) REFERENCES users(id),
+          FOREIGN KEY (result_id) REFERENCES test_results(id)
+        );
+        INSERT INTO test_invitations
+          (id, token, candidate_id, test_id, allow_pause_resume, created_by, created_at, expires_at, status, started_at, completed_at, result_id)
+          SELECT id, token, candidate_id, test_id, allow_pause_resume, created_by, created_at, expires_at, status, started_at, completed_at, result_id
+          FROM _ti_old;
+        DROP TABLE _ti_old;
+        CREATE INDEX idx_invitations_token ON test_invitations(token);
+        CREATE INDEX idx_invitations_status ON test_invitations(status);
+        CREATE INDEX idx_invitations_candidate ON test_invitations(candidate_id);
+      `);
+      persistDBSync();
+      console.log('[DB] اكتمل الترحيل بنجاح');
+    }
+  } catch (err) {
+    console.error('[DB] فشل الترحيل:', err.message);
+  }
 }
 
 /**
@@ -117,7 +165,7 @@ function createSchema() {
       id                    INTEGER PRIMARY KEY AUTOINCREMENT,
       token                 TEXT NOT NULL UNIQUE,
       candidate_id          INTEGER NOT NULL,
-      test_id               TEXT NOT NULL CHECK(test_id IN ('mbti', 'bigfive', 'disc')),
+      test_id               TEXT NOT NULL CHECK(test_id IN ('mbti', 'bigfive', 'disc', 'legal')),
       allow_pause_resume    INTEGER NOT NULL DEFAULT 0,
       created_by            INTEGER NOT NULL,
       created_at            TEXT NOT NULL DEFAULT (datetime('now')),

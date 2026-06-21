@@ -12,18 +12,21 @@ const db = require('../db');
 const { analyzeMBTI } = require('../engines/mbti-engine');
 const { analyzeBigFive } = require('../engines/bigfive-engine');
 const { analyzeDISC } = require('../engines/disc-engine');
+const { analyzeLegal } = require('../engines/legal-engine');
 
 const ANALYZERS = {
   mbti: analyzeMBTI,
   bigfive: analyzeBigFive,
-  disc: analyzeDISC
+  disc: analyzeDISC,
+  legal: analyzeLegal
 };
 
 const DATA_DIR = path.join(__dirname, '..', '..', 'data');
 const QUESTIONS_FILES = {
   mbti: 'mbti-questions.json',
   bigfive: 'bigfive-questions.json',
-  disc: 'disc-questions.json'
+  disc: 'disc-questions.json',
+  legal: 'legal-trainee-questions.json'
 };
 
 // ========== مُساعِد: التحقّق من صلاحية token ==========
@@ -126,13 +129,25 @@ router.get('/:token/questions', (req, res) => {
     }
   }
 
+  // الاختبار المعرفي: أسئلة متعدّدة الخيارات — نُرجع نصوص الخيارات دون الدرجات
+  const isMCQ = invitation.test_id === 'legal';
+  const questionsOut = isMCQ
+    ? raw.questions.map(q => ({
+        id: q.id,
+        scenario: q.scenario_ar || '',
+        text: q.question_ar,
+        options: (q.options || []).map(o => ({ id: o.id, text: o.text_ar }))
+      }))
+    : raw.questions.map(q => ({ id: q.id, text: q.text }));
+
   res.json({
     test_id: raw.test_id,
     test_name_ar: raw.test_name_ar,
     instructions_ar: raw.instructions_ar,
-    scale_ar: raw.scale_ar,
+    question_type: isMCQ ? 'mcq' : 'likert',
+    scale_ar: raw.scale_ar || null,
     total_questions: raw.questions.length,
-    questions: raw.questions.map(q => ({ id: q.id, text: q.text })),
+    questions: questionsOut,
     saved_progress: savedProgress,
     allow_pause_resume: !!invitation.allow_pause_resume
   });
@@ -284,6 +299,15 @@ function buildShortResult(fullResult) {
         short_description: r.interpretation.short_description_ar,
         is_reverse_scored: r.score.is_reverse_scored
       }))
+    };
+  }
+
+  if (fullResult.test_id === 'legal') {
+    // اختبار تقييمي: لا نكشف الدرجة أو الكفايات للمرشّح — رسالة إتمام فقط
+    return {
+      test_id: 'legal',
+      completed: true,
+      short_description: 'تمّ استلام إجاباتك على الاختبار المعرفي بنجاح.'
     };
   }
 

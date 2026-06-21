@@ -180,6 +180,7 @@
 
       state.questions = data.questions;
       state.scaleLabels = data.scale_ar;
+      state.questionType = data.question_type || 'likert';
       state.allowPauseResume = !!data.allow_pause_resume;
 
       // استئناف التقدّم المحفوظ
@@ -210,20 +211,38 @@
     document.getElementById('progress-fill').style.width = (current / total * 100) + '%';
     document.getElementById('progress-text').textContent = `السؤال ${current} من ${total}`;
     document.getElementById('question-number').textContent = `سؤال ${current}`;
-    document.getElementById('question-text').textContent = q.text;
+
+    // نصّ السؤال — مع السيناريو إن وُجد (الاختبار المعرفي)
+    const qtext = document.getElementById('question-text');
+    if (state.questionType === 'mcq' && q.scenario) {
+      qtext.innerHTML = `<div style="font-weight:400;font-size:16px;color:var(--muted);margin-bottom:10px;">${esc(q.scenario)}</div>${esc(q.text)}`;
+    } else {
+      qtext.textContent = q.text;
+    }
 
     const box = document.getElementById('answer-options');
     box.innerHTML = '';
-    [1, 2, 3, 4, 5].forEach(n => {
-      const div = document.createElement('div');
-      div.className = 'answer-option' + (state.answers[q.id] === n ? ' selected' : '');
-      div.innerHTML = `<span class="number">${n}</span><span>${esc(state.scaleLabels[n])}</span>`;
-      div.addEventListener('click', () => {
-        state.answers[q.id] = n;
-        renderQuestion();
+
+    if (state.questionType === 'mcq') {
+      // أسئلة متعدّدة الخيارات (الاختبار المعرفي)
+      const letters = { a: 'أ', b: 'ب', c: 'ج', d: 'د', e: 'هـ' };
+      (q.options || []).forEach(opt => {
+        const div = document.createElement('div');
+        div.className = 'answer-option' + (state.answers[q.id] === opt.id ? ' selected' : '');
+        div.innerHTML = `<span class="number">${letters[opt.id] || opt.id}</span><span>${esc(opt.text)}</span>`;
+        div.addEventListener('click', () => { state.answers[q.id] = opt.id; renderQuestion(); });
+        box.appendChild(div);
       });
-      box.appendChild(div);
-    });
+    } else {
+      // مقياس ليكرت 1–5 (اختبارات الشخصية)
+      [1, 2, 3, 4, 5].forEach(n => {
+        const div = document.createElement('div');
+        div.className = 'answer-option' + (state.answers[q.id] === n ? ' selected' : '');
+        div.innerHTML = `<span class="number">${n}</span><span>${esc(state.scaleLabels[n])}</span>`;
+        div.addEventListener('click', () => { state.answers[q.id] = n; renderQuestion(); });
+        box.appendChild(div);
+      });
+    }
 
     document.getElementById('btn-prev').disabled = (state.currentIndex === 0);
     const nextBtn = document.getElementById('btn-next');
@@ -332,6 +351,10 @@
         ${dims ? card('نسبك في الأبعاد الخمسة', dims) : ''}
         ${details ? card('تفسير مختصر', details) : ''}
       `;
+    } else if (r.test_id === 'legal') {
+      body = `${headline('✓', 'تمّ إكمال الاختبار المعرفي', '')}
+        ${card('شكراً لك', `<p>${esc(r.short_description || 'تمّ استلام إجاباتك بنجاح.')}</p>
+          <p class="muted">ستتولّى الإدارة مراجعة النتيجة التفصيلية.</p>`)}`;
     } else {
       body = card('تمّ الاستلام', '<p>تمّ تسجيل إجاباتك بنجاح.</p>');
     }

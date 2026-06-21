@@ -112,6 +112,10 @@
                 <span class="icon">🧭</span><div class="name">DISC</div>
                 <div class="desc">الأنماط السلوكية · ~8 دقائق</div>
               </div>
+              <div class="choice-card" data-test="legal">
+                <span class="icon">⚖️</span><div class="name">الاختبار المعرفي</div>
+                <div class="desc">كفاءة قانونية (متدرّب) · ~25 دقيقة</div>
+              </div>
             </div>
 
             <div class="checkbox-row" style="margin:18px 0;">
@@ -289,7 +293,7 @@
     pending: 'بانتظار البدء', in_progress: 'قيد التنفيذ', completed: 'مكتمل',
     cancelled: 'ملغى', expired: 'منتهٍ'
   };
-  const TEST_AR = { mbti: 'MBTI', bigfive: 'Big Five', disc: 'DISC' };
+  const TEST_AR = { mbti: 'MBTI', bigfive: 'Big Five', disc: 'DISC', legal: 'الاختبار المعرفي' };
   const ROLE_AR = { founder: 'المؤسس', admin: 'مدير' };
   const fmtDate = s => { if (!s) return '—'; const d = new Date(s.includes('Z')||s.includes('T')?s:s.replace(' ','T')+'Z'); return isNaN(d)?s:d.toLocaleString('ar-SA',{dateStyle:'medium',timeStyle:'short'}); };
 
@@ -516,6 +520,11 @@
     } else if (d.test_id === 'bigfive') {
       headlineCode = d.profile_code; headlineName = 'العوامل الخمسة الكبرى'; headlineTag = 'Big Five';
       (d.dimension_reports || []).forEach(x => bars += barRow(`${esc(x.dimension_code)} — ${esc(x.dimension_name_ar)}`, x.score.percent));
+    } else if (d.test_id === 'legal') {
+      headlineCode = (d.total_percent != null ? d.total_percent + '%' : '');
+      headlineName = d.level ? d.level.label_ar : '';
+      headlineTag = 'الاختبار المعرفي — مستوى المتدرّب';
+      (d.domain_reports || []).forEach(x => bars += barRow(`${esc(x.domain_name_ar)}`, x.percent));
     }
 
     let html = `
@@ -538,7 +547,55 @@
     if (d.test_id === 'bigfive') {
       html += renderBigFiveDetail(d);
     }
+    // الاختبار المعرفي — تقرير الكفاءة
+    if (d.test_id === 'legal') {
+      html += renderLegalDetail(d);
+    }
     return html;
+  }
+
+  function renderLegalDetail(d) {
+    const rep = d.detailed_report_for_admin || {};
+    let h = '';
+
+    if (d.ethics_red_flag) {
+      h += `<div class="alert alert-error" style="font-weight:600;">⚠️ علم أحمر: ضعف في كفاية الأخلاقيات المهنية — راجع التفاصيل أدناه.</div>`;
+    }
+    if (rep.executive_summary_ar) h += section('الملخّص التنفيذي', `<p>${esc(rep.executive_summary_ar)}</p>`);
+
+    // أداء الأسئلة الصعبة
+    if (rep.hard_questions_ar) {
+      h += section('أداء الأسئلة الصعبة',
+        `<p><strong>${rep.hard_questions_ar.percent}% — ${esc(rep.hard_questions_ar.label_ar)}</strong></p>
+         <p class="muted">${esc(rep.hard_questions_ar.note_ar)}</p>`);
+    }
+
+    // تحليل الكفايات
+    if (Array.isArray(rep.domain_analysis_ar)) {
+      const rows = rep.domain_analysis_ar.map(x =>
+        `<div style="margin-bottom:10px;">
+           <div class="row-between"><strong>${esc(x.name_ar)}</strong><span class="muted">${x.percent}% · ${esc(x.level_label_ar)}</span></div>
+           ${barRow('', x.percent)}
+           <p class="muted" style="font-size:13px;margin-top:2px;">${esc(x.note_ar)}</p>
+         </div>`).join('');
+      h += section('تحليل الكفايات الخمس', rows);
+    }
+
+    if (rep.strengths_ar) h += section('نقاط القوة', listHtml(rep.strengths_ar));
+    if (rep.gaps_ar) h += section('الفجوات', listHtml(rep.gaps_ar));
+
+    // التوصية
+    if (rep.recommendation_ar) {
+      const rec = rep.recommendation_ar;
+      h += section('التوصية', `<div class="rec-block">
+        <h4>${esc(rec.decision_ar)}</h4>
+        ${rec.intro_ar ? `<p>${esc(rec.intro_ar)}</p>` : ''}
+        ${rec.items_ar ? listHtml(rec.items_ar) : ''}</div>`);
+    }
+
+    if (rep.development_recommendations_ar) h += section('خطة التطوير المقترحة', listHtml(rep.development_recommendations_ar));
+    if (rep.red_flags_ar) h += section('الأعلام والملاحظات', listHtml(rep.red_flags_ar));
+    return h;
   }
 
   function renderAdminReport(rep) {
