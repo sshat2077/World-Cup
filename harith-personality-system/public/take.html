@@ -351,8 +351,8 @@
         ${dims ? card('نسبك في الأبعاد الخمسة', dims) : ''}
         ${details ? card('تفسير مختصر', details) : ''}
       `;
-    } else if (r.test_id === 'legal') {
-      body = `${headline('✓', 'تمّ إكمال الاختبار المعرفي', '')}
+    } else if (r.test_id === 'legal' || r.test_id === 'obligations') {
+      body = `${headline('✓', 'تمّ إكمال الاختبار', '')}
         ${card('شكراً لك', `<p>${esc(r.short_description || 'تمّ استلام إجاباتك بنجاح.')}</p>
           <p class="muted">ستتولّى الإدارة مراجعة النتيجة التفصيلية.</p>`)}`;
     } else {

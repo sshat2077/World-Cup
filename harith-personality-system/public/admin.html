@@ -116,6 +116,10 @@
                 <span class="icon">⚖️</span><div class="name">الاختبار المعرفي</div>
                 <div class="desc">كفاءة قانونية (متدرّب) · ~25 دقيقة</div>
               </div>
+              <div class="choice-card" data-test="obligations">
+                <span class="icon">📚</span><div class="name">مصادر الالتزام</div>
+                <div class="desc">متقدّم · أوبن-بوك · 10 أسئلة · ~30 دقيقة</div>
+              </div>
             </div>
 
             <div class="checkbox-row" style="margin:18px 0;">
@@ -293,7 +297,7 @@
     pending: 'بانتظار البدء', in_progress: 'قيد التنفيذ', completed: 'مكتمل',
     cancelled: 'ملغى', expired: 'منتهٍ'
   };
-  const TEST_AR = { mbti: 'MBTI', bigfive: 'Big Five', disc: 'DISC', legal: 'الاختبار المعرفي' };
+  const TEST_AR = { mbti: 'MBTI', bigfive: 'Big Five', disc: 'DISC', legal: 'الاختبار المعرفي', obligations: 'مصادر الالتزام' };
   const ROLE_AR = { founder: 'المؤسس', admin: 'مدير' };
   const fmtDate = s => { if (!s) return '—'; const d = new Date(s.includes('Z')||s.includes('T')?s:s.replace(' ','T')+'Z'); return isNaN(d)?s:d.toLocaleString('ar-SA',{dateStyle:'medium',timeStyle:'short'}); };
 
@@ -525,6 +529,11 @@
       headlineName = d.level ? d.level.label_ar : '';
       headlineTag = 'الاختبار المعرفي — مستوى المتدرّب';
       (d.domain_reports || []).forEach(x => bars += barRow(`${esc(x.domain_name_ar)}`, x.percent));
+    } else if (d.test_id === 'obligations') {
+      headlineCode = (d.total_percent != null ? d.total_percent + '%' : '');
+      headlineName = d.level ? d.level.label_ar : '';
+      headlineTag = `مصادر الالتزام — متقدّم${d.open_book ? ' · أوبن-بوك' : ''}`;
+      (d.domain_reports || []).forEach(x => bars += barRow(`${esc(x.domain_name_ar)}`, x.percent));
     }
 
     let html = `
@@ -551,7 +560,40 @@
     if (d.test_id === 'legal') {
       html += renderLegalDetail(d);
     }
+    // اختبارات السيناريوهات العامّة (مصادر الالتزام) — تقرير المصادر
+    if (d.test_id === 'obligations') {
+      html += renderScenarioDetail(d);
+    }
     return html;
+  }
+
+  function renderScenarioDetail(d) {
+    const rep = d.detailed_report_for_admin || {};
+    let h = '';
+    if (typeof d.served_count === 'number') {
+      h += `<p class="muted" style="margin-bottom:12px;">أُجيب عن ${d.served_count} سؤالاً مخدوماً من بنك ${d.bank_size}.</p>`;
+    }
+    if (rep.executive_summary_ar) h += section('الملخّص التنفيذي', `<p>${esc(rep.executive_summary_ar)}</p>`);
+    if (Array.isArray(rep.domain_analysis_ar)) {
+      const rows = rep.domain_analysis_ar.map(x =>
+        `<div style="margin-bottom:10px;">
+           <div class="row-between"><strong>${esc(x.name_ar)}</strong><span class="muted">${x.percent}% · ${esc(x.level_label_ar)}</span></div>
+           ${barRow('', x.percent)}
+           <p class="muted" style="font-size:13px;margin-top:2px;">${esc(x.note_ar)}</p>
+         </div>`).join('');
+      h += section('تحليل المصادر', rows);
+    }
+    if (rep.strengths_ar) h += section('نقاط القوة', listHtml(rep.strengths_ar));
+    if (rep.gaps_ar) h += section('الفجوات', listHtml(rep.gaps_ar));
+    if (rep.recommendation_ar) {
+      const rec = rep.recommendation_ar;
+      h += section('التوصية', `<div class="rec-block">
+        <h4>${esc(rec.decision_ar)}</h4>
+        ${rec.intro_ar ? `<p>${esc(rec.intro_ar)}</p>` : ''}
+        ${rec.items_ar ? listHtml(rec.items_ar) : ''}</div>`);
+    }
+    if (rep.development_recommendations_ar) h += section('خطة التطوير المقترحة', listHtml(rep.development_recommendations_ar));
+    return h;
   }
 
   function renderLegalDetail(d) {

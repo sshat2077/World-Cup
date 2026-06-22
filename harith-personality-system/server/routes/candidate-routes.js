@@ -13,7 +13,10 @@ const { analyzeMBTI } = require('../engines/mbti-engine');
 const { analyzeBigFive } = require('../engines/bigfive-engine');
 const { analyzeDISC } = require('../engines/disc-engine');
 const { analyzeLegal } = require('../engines/legal-engine');
+const { analyzeScenario } = require('../engines/scenario-engine');
+const { selectServed } = require('../lib/sampling');
 
+// محرّكات تأخذ (answers) فقط
 const ANALYZERS = {
   mbti: analyzeMBTI,
   bigfive: analyzeBigFive,
@@ -21,43 +24,24 @@ const ANALYZERS = {
   legal: analyzeLegal
 };
 
+// اختبارات سيناريوهات متعدّدة الخيارات (تُخدَم بخلط، وقد تُخدَم كمجموعة جزئية من بنك أكبر)
+const MCQ_TESTS = new Set(['legal', 'obligations']);
+// اختبارات سيناريوهات تُصحَّح بالمحرّك العامّ (تحتاج token + اختيار المجموعة المخدومة)
+const SCENARIO_TESTS = new Set(['obligations']);
+
 const DATA_DIR = path.join(__dirname, '..', '..', 'data');
 const QUESTIONS_FILES = {
   mbti: 'mbti-questions.json',
   bigfive: 'bigfive-questions.json',
   disc: 'disc-questions.json',
-  legal: 'legal-trainee-questions.json'
+  legal: 'legal-trainee-questions.json',
+  obligations: 'obligations-questions.json'
 };
 
-// ========== خلط عشوائي مبذور بالـtoken (ثابت لكل مرشّح، متنوّع بينهم) ==========
-// يجعل ترتيب الأسئلة والخيارات عشوائياً دون كشف نمط (الإجابة الصحيحة لا تثبت في موضع)،
-// ويبقى ثابتاً عند الاستئناف لأن البذرة مشتقّة من الـtoken.
-
-function seedFromToken(token) {
-  let h = 2166136261 >>> 0;
-  for (let i = 0; i < token.length; i++) {
-    h ^= token.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-
-function mulberry32(a) {
-  return function () {
-    a |= 0; a = (a + 0x6D2B79F5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function seededShuffle(arr, rnd) {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rnd() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
+// عدد الأسئلة المخدومة فعلاً (قد يكون أقلّ من حجم البنك عند وجود serve_count)
+function servedCount(raw) {
+  return (raw.serve_count && raw.serve_count < raw.questions.length)
+    ? raw.serve_count : raw.questions.length;
 }
 
 // ========== مُساعِد: التحقّق من صلاحية token ==========
@@ -117,7 +101,8 @@ router.get('/:token/info', (req, res) => {
     description_ar: raw.description_ar,
     instructions_ar: raw.instructions_ar,
     estimated_time_minutes: raw.estimated_time_minutes,
-    total_questions: raw.questions.length,
+    total_questions: servedCount(raw),
+    open_book: !!raw.open_book,
     allow_pause_resume: !!invitation.allow_pause_resume,
     status: invitation.status,
     expires_at: invitation.expires_at
@@ -160,19 +145,18 @@ router.get('/:token/questions', (req, res) => {
     }
   }
 
-  // الاختبار المعرفي: أسئلة متعدّدة الخيارات — نُرجع نصوص الخيارات دون الدرجات
-  // مع خلط ترتيب الأسئلة والخيارات عشوائياً (مبذور بالـtoken) كي لا يثبت موضع الإجابة الصحيحة.
-  const isMCQ = invitation.test_id === 'legal';
+  // اختبارات السيناريوهات: أسئلة متعدّدة الخيارات — نُرجع نصوص الخيارات دون الدرجات.
+  // selectServed يختار المجموعة المخدومة (subset عند وجود serve_count) ويخلط الأسئلة والخيارات
+  // عشوائياً (مبذور بالـtoken) كي لا يثبت موضع الإجابة الصحيحة ولا تتطابق نسخ المختبَرين.
+  const isMCQ = MCQ_TESTS.has(invitation.test_id);
   let questionsOut;
   if (isMCQ) {
-    const rnd = mulberry32(seedFromToken(token));
-    const shuffledQuestions = seededShuffle(raw.questions, rnd);
-    questionsOut = shuffledQuestions.map(q => ({
+    const served = selectServed(raw, token);
+    questionsOut = served.map(q => ({
       id: q.id,
       scenario: q.scenario_ar || '',
       text: q.question_ar,
-      // المُعرّف (id) يبقى مرتبطاً بنصّه ودرجته؛ يتغيّر الموضع فقط
-      options: seededShuffle(q.options || [], rnd).map(o => ({ id: o.id, text: o.text_ar }))
+      options: (q.options || []).map(o => ({ id: o.id, text: o.text_ar }))
     }));
   } else {
     questionsOut = raw.questions.map(q => ({ id: q.id, text: q.text }));
@@ -184,7 +168,8 @@ router.get('/:token/questions', (req, res) => {
     instructions_ar: raw.instructions_ar,
     question_type: isMCQ ? 'mcq' : 'likert',
     scale_ar: raw.scale_ar || null,
-    total_questions: raw.questions.length,
+    total_questions: questionsOut.length,
+    open_book: !!raw.open_book,
     questions: questionsOut,
     saved_progress: savedProgress,
     allow_pause_resume: !!invitation.allow_pause_resume
@@ -246,10 +231,15 @@ router.post('/:token/submit', (req, res) => {
   if (!answers) return res.status(400).json({ error: 'answers مفقودة' });
 
   try {
-    const analyzer = ANALYZERS[invitation.test_id];
-    if (!analyzer) return res.status(400).json({ error: 'محرك غير معروف' });
-
-    const result = analyzer(answers);
+    let result;
+    if (SCENARIO_TESTS.has(invitation.test_id)) {
+      // المحرّك العامّ يحتاج token لإعادة حساب المجموعة المخدومة وتصحيحها
+      result = analyzeScenario(invitation.test_id, answers, token);
+    } else {
+      const analyzer = ANALYZERS[invitation.test_id];
+      if (!analyzer) return res.status(400).json({ error: 'محرك غير معروف' });
+      result = analyzer(answers);
+    }
 
     // حفظ النتيجة
     const shortCode = db.generateShortCode();
@@ -346,6 +336,14 @@ function buildShortResult(fullResult) {
       test_id: 'legal',
       completed: true,
       short_description: 'تمّ استلام إجاباتك على الاختبار المعرفي بنجاح.'
+    };
+  }
+
+  if (fullResult.test_id === 'obligations') {
+    return {
+      test_id: 'obligations',
+      completed: true,
+      short_description: 'تمّ استلام إجاباتك على اختبار مصادر الالتزام بنجاح.'
     };
   }
 

@@ -61,21 +61,23 @@ async function initDB() {
 
 /**
  * ترحيلات المخطّط للقواعد القائمة (تُطبَّق مرة واحدة عند الحاجة).
- * حالياً: توسيع قيد test_id ليشمل 'legal' (الاختبار المعرفي).
+ * حالياً: إزالة قيد test_id نهائياً (التحقّق صار في طبقة التطبيق)
+ *         كي لا يحتاج أي اختبار جديد لاحقاً إلى ترحيل قاعدة بيانات.
  */
 function migrateSchema() {
   try {
     const res = db.exec("SELECT sql FROM sqlite_master WHERE type='table' AND name='test_invitations'");
     const ddl = (res.length && res[0].values.length) ? String(res[0].values[0][0]) : '';
-    if (ddl && !ddl.includes("'legal'")) {
-      console.log("[DB] ترحيل: توسيع قيد test_id ليشمل 'legal'");
+    // إن كان ما زال هناك قيد CHECK على test_id (بأي إصدار سابق) نُعيد بناء الجدول بلا هذا القيد
+    if (ddl && /CHECK\s*\(\s*test_id/i.test(ddl)) {
+      console.log('[DB] ترحيل: إزالة قيد test_id (لدعم أنواع اختبارات جديدة بلا ترحيل)');
       db.run(`
         ALTER TABLE test_invitations RENAME TO _ti_old;
         CREATE TABLE test_invitations (
           id                    INTEGER PRIMARY KEY AUTOINCREMENT,
           token                 TEXT NOT NULL UNIQUE,
           candidate_id          INTEGER NOT NULL,
-          test_id               TEXT NOT NULL CHECK(test_id IN ('mbti', 'bigfive', 'disc', 'legal')),
+          test_id               TEXT NOT NULL,
           allow_pause_resume    INTEGER NOT NULL DEFAULT 0,
           created_by            INTEGER NOT NULL,
           created_at            TEXT NOT NULL DEFAULT (datetime('now')),
@@ -90,7 +92,9 @@ function migrateSchema() {
         );
         INSERT INTO test_invitations
           (id, token, candidate_id, test_id, allow_pause_resume, created_by, created_at, expires_at, status, started_at, completed_at, result_id)
-          SELECT id, token, candidate_id, test_id, allow_pause_resume, created_by, created_at, expires_at, status, started_at, completed_at, result_id
+          SELECT id, token, candidate_id, test_id, COALESCE(allow_pause_resume, 0), created_by,
+                 COALESCE(created_at, datetime('now')), COALESCE(expires_at, datetime('now')),
+                 COALESCE(status, 'pending'), started_at, completed_at, result_id
           FROM _ti_old;
         DROP TABLE _ti_old;
         CREATE INDEX idx_invitations_token ON test_invitations(token);
@@ -165,7 +169,7 @@ function createSchema() {
       id                    INTEGER PRIMARY KEY AUTOINCREMENT,
       token                 TEXT NOT NULL UNIQUE,
       candidate_id          INTEGER NOT NULL,
-      test_id               TEXT NOT NULL CHECK(test_id IN ('mbti', 'bigfive', 'disc', 'legal')),
+      test_id               TEXT NOT NULL,
       allow_pause_resume    INTEGER NOT NULL DEFAULT 0,
       created_by            INTEGER NOT NULL,
       created_at            TEXT NOT NULL DEFAULT (datetime('now')),
