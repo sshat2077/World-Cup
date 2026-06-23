@@ -18,7 +18,8 @@ const DATA_DIR = path.join(__dirname, '..', '..', 'data');
 
 // خريطة الاختبارات السيناريوية → ملفّ البنك (لإضافة باب جديد: أضف سطراً)
 const BANK_FILES = {
-  obligations: 'obligations-questions.json'
+  obligations: 'obligations-questions.json',
+  provisions: 'provisions-questions.json'
 };
 
 function loadBank(testId) {
@@ -108,7 +109,7 @@ function analyzeScenario(testId, answers, token) {
 
   const execSummary =
     `حقّق المختبَر ${totalPercent}% (مستوى «${overallLevel.label_ar}») في ${servedIds.length} سؤالاً مخدوماً من بنك ${bank.questions.length}. ` +
-    (strengths.length ? `أقوى المصادر: ${strengths.join('، ')}. ` : '') +
+    (strengths.length ? `أقوى المحاور: ${strengths.join('، ')}. ` : '') +
     (gaps.length ? `وأضعفها: ${gaps.join('، ')}.` : 'دون فجوات جوهرية.');
 
   return {
@@ -154,9 +155,9 @@ function domainNote(name, percent) {
 function recommendationFor(levelCode) {
   const map = {
     distinguished: {
-      decision_ar: 'كفاءة متميّزة في مصادر الالتزام',
-      intro_ar: 'تكييف قانوني دقيق في اختبارٍ مفتوح المرجع.',
-      items_ar: ['أسند له حالات تحليلية أعقد ومسائل تكييف متعدّدة المصادر.', 'مرشّح قوي للمهام النوعية في صياغة وتحليل الالتزامات.']
+      decision_ar: 'كفاءة متميّزة',
+      intro_ar: 'تطبيق قانوني دقيق في اختبارٍ مفتوح المرجع.',
+      items_ar: ['أسند له حالات تحليلية أعقد ومسائل متشابكة.', 'مرشّح قوي للمهام النوعية في الصياغة والتحليل القانوني.']
     },
     advanced: {
       decision_ar: 'مستوى متقدّم',

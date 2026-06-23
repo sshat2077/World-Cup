@@ -25,9 +25,9 @@ const ANALYZERS = {
 };
 
 // اختبارات سيناريوهات متعدّدة الخيارات (تُخدَم بخلط، وقد تُخدَم كمجموعة جزئية من بنك أكبر)
-const MCQ_TESTS = new Set(['legal', 'obligations']);
+const MCQ_TESTS = new Set(['legal', 'obligations', 'provisions']);
 // اختبارات سيناريوهات تُصحَّح بالمحرّك العامّ (تحتاج token + اختيار المجموعة المخدومة)
-const SCENARIO_TESTS = new Set(['obligations']);
+const SCENARIO_TESTS = new Set(['obligations', 'provisions']);
 
 const DATA_DIR = path.join(__dirname, '..', '..', 'data');
 const QUESTIONS_FILES = {
@@ -35,7 +35,8 @@ const QUESTIONS_FILES = {
   bigfive: 'bigfive-questions.json',
   disc: 'disc-questions.json',
   legal: 'legal-trainee-questions.json',
-  obligations: 'obligations-questions.json'
+  obligations: 'obligations-questions.json',
+  provisions: 'provisions-questions.json'
 };
 
 // عدد الأسئلة المخدومة فعلاً (قد يكون أقلّ من حجم البنك عند وجود serve_count)
@@ -344,6 +345,14 @@ function buildShortResult(fullResult) {
       test_id: 'obligations',
       completed: true,
       short_description: 'تمّ استلام إجاباتك على اختبار مصادر الالتزام بنجاح.'
+    };
+  }
+
+  if (fullResult.test_id === 'provisions') {
+    return {
+      test_id: 'provisions',
+      completed: true,
+      short_description: 'تمّ استلام إجاباتك على اختبار أحكام الالتزام بنجاح.'
     };
   }
 

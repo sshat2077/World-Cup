@@ -120,6 +120,10 @@
                 <span class="icon">📚</span><div class="name">مصادر الالتزام</div>
                 <div class="desc">متقدّم · أوبن-بوك · 10 أسئلة · ~30 دقيقة</div>
               </div>
+              <div class="choice-card" data-test="provisions">
+                <span class="icon">📑</span><div class="name">أحكام الالتزام</div>
+                <div class="desc">متقدّم · أوبن-بوك · 10 أسئلة · ~35 دقيقة</div>
+              </div>
             </div>
 
             <div class="checkbox-row" style="margin:18px 0;">
@@ -297,7 +301,7 @@
     pending: 'بانتظار البدء', in_progress: 'قيد التنفيذ', completed: 'مكتمل',
     cancelled: 'ملغى', expired: 'منتهٍ'
   };
-  const TEST_AR = { mbti: 'MBTI', bigfive: 'Big Five', disc: 'DISC', legal: 'الاختبار المعرفي', obligations: 'مصادر الالتزام' };
+  const TEST_AR = { mbti: 'MBTI', bigfive: 'Big Five', disc: 'DISC', legal: 'الاختبار المعرفي', obligations: 'مصادر الالتزام', provisions: 'أحكام الالتزام' };
   const ROLE_AR = { founder: 'المؤسس', admin: 'مدير' };
   const fmtDate = s => { if (!s) return '—'; const d = new Date(s.includes('Z')||s.includes('T')?s:s.replace(' ','T')+'Z'); return isNaN(d)?s:d.toLocaleString('ar-SA',{dateStyle:'medium',timeStyle:'short'}); };
 
@@ -529,10 +533,11 @@
       headlineName = d.level ? d.level.label_ar : '';
       headlineTag = 'الاختبار المعرفي — مستوى المتدرّب';
       (d.domain_reports || []).forEach(x => bars += barRow(`${esc(x.domain_name_ar)}`, x.percent));
-    } else if (d.test_id === 'obligations') {
+    } else if (d.test_id === 'obligations' || d.test_id === 'provisions') {
       headlineCode = (d.total_percent != null ? d.total_percent + '%' : '');
       headlineName = d.level ? d.level.label_ar : '';
-      headlineTag = `مصادر الالتزام — متقدّم${d.open_book ? ' · أوبن-بوك' : ''}`;
+      const tagName = TEST_AR[d.test_id] || '';
+      headlineTag = `${tagName} — متقدّم${d.open_book ? ' · أوبن-بوك' : ''}`;
       (d.domain_reports || []).forEach(x => bars += barRow(`${esc(x.domain_name_ar)}`, x.percent));
     }
 
@@ -560,8 +565,8 @@
     if (d.test_id === 'legal') {
       html += renderLegalDetail(d);
     }
-    // اختبارات السيناريوهات العامّة (مصادر الالتزام) — تقرير المصادر
-    if (d.test_id === 'obligations') {
+    // اختبارات السيناريوهات العامّة (مصادر/أحكام الالتزام) — تقرير المحاور
+    if (d.test_id === 'obligations' || d.test_id === 'provisions') {
       html += renderScenarioDetail(d);
     }
     return html;

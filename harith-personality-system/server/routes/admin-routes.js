@@ -30,7 +30,7 @@ router.post('/invitations', (req, res) => {
     if (!candidate_name || !candidate_email || !test_id) {
       return res.status(400).json({ error: 'الاسم والبريد ونوع الاختبار مطلوبة' });
     }
-    if (!['mbti', 'bigfive', 'disc', 'legal', 'obligations'].includes(test_id)) {
+    if (!['mbti', 'bigfive', 'disc', 'legal', 'obligations', 'provisions'].includes(test_id)) {
       return res.status(400).json({ error: 'نوع اختبار غير مدعوم' });
     }
 
